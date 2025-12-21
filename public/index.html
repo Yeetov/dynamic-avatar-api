@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Game Avatars</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #e5e7eb; }
+        
+        /* Pixelated for Minecraft, Smooth for OW */
+        .pixelated { 
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .smooth { image-rendering: auto; }
+        
+        .game-btn.active { background-color: #2563eb; color: white; border-color: #3b82f6; }
+        .game-btn { background-color: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+        
+        .loader {
+            border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6;
+            width: 20px; height: 20px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-12 px-4">
+
+    <div class="text-center mb-8 space-y-2">
+        <h1 class="text-4xl font-bold text-white tracking-tight">
+            <span class="text-blue-500"><i class="fas fa-gamepad mr-2"></i>Avatar</span>API
+        </h1>
+        <p class="text-gray-400">Dynamic Avatars for Every Game</p>
+    </div>
+
+    <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl p-6 md:p-8 border border-gray-700">
+        
+        <!-- Game Selector -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
+                <i class="fas fa-cube"></i> Minecraft
+            </button>
+            <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
+                <i class="fas fa-shield-alt"></i> Overwatch 2
+            </button>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <div class="relative flex-grow">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-user"></i></span>
+                <input type="text" id="usernameInput" placeholder="Minecraft Username (e.g. Notch)" 
+                    class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg py-3 pl-10 pr-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    onkeydown="if(event.key === 'Enter') fetchAvatar()">
+            </div>
+            <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                <span>Fetch</span>
+            </button>
+        </div>
+
+        <div id="statusMessage" class="hidden mb-6 text-sm text-center py-2 px-4 rounded bg-gray-900 border border-gray-700"></div>
+
+        <!-- Render Area -->
+        <div class="flex flex-col items-center justify-center min-h-[300px] bg-gray-900/50 rounded-lg border border-gray-700 p-8">
+            
+            <div class="relative group">
+                <!-- Image Container -->
+                <img id="avatarPreview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                    class="w-32 h-32 md:w-48 md:h-48 shadow-2xl rounded-lg object-contain pixelated bg-gray-800 transition-transform duration-300">
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity rounded-lg">
+                     <a id="downloadLink" href="#" download="avatar.png" class="text-white hover:text-blue-400"><i class="fas fa-download fa-2x"></i></a>
+                </div>
+            </div>
+
+            <!-- Dynamic Link Generator -->
+            <div class="w-full max-w-md mt-8 space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-[10px] text-gray-500 uppercase font-semibold">Dynamic API Link</label>
+                    <span id="apiStatus" class="text-[10px] bg-gray-700 px-1 rounded text-gray-400">Client Mode</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="apiLinkInput" readonly 
+                        class="w-full bg-gray-950 border border-gray-700 text-gray-400 text-xs rounded px-2 py-3 focus:outline-none focus:border-blue-500 font-mono"
+                        placeholder="Generate an avatar to get link...">
+                    <button onclick="copyLink()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-4 rounded transition-colors" title="Copy">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button onclick="openLink()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-4 rounded transition-colors" title="Open">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 text-center">Use this link in your own websites <code>&lt;img src="..."&gt;</code></p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentGame = 'minecraft';
+        const hasApi = window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file');
+
+        if(hasApi) {
+            document.getElementById('apiStatus').innerText = "Live API";
+            document.getElementById('apiStatus').classList.replace('text-gray-400', 'text-green-400');
+        } else {
+            document.getElementById('apiStatus').innerText = "Deploy to Vercel";
+        }
+
+        function switchGame(game) {
+            currentGame = game;
+            
+            // UI Toggle
+            document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${game}`).classList.add('active');
+
+            // Input Placeholder
+            const input = document.getElementById('usernameInput');
+            const img = document.getElementById('avatarPreview');
+
+            if (game === 'minecraft') {
+                input.placeholder = "Minecraft Username (e.g. Notch)";
+                img.classList.remove('smooth', 'rounded-full');
+                img.classList.add('pixelated', 'rounded-lg');
+            } else {
+                input.placeholder = "BattleTag (Name#1234)";
+                img.classList.remove('pixelated', 'rounded-lg');
+                img.classList.add('smooth', 'rounded-full'); // OW icons are circles usually
+            }
+            
+            // Clear previous
+            input.value = '';
+            document.getElementById('apiLinkInput').value = '';
+            img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+            document.getElementById('statusMessage').classList.add('hidden');
+        }
+
+        async function fetchAvatar() {
+            const input = document.getElementById('usernameInput');
+            const username = input.value.trim();
+            if (!username) return;
+
+            showStatus('Generating dynamic link...', 'text-blue-300', true);
+
+            // Construct API URL
+            // If running locally without API, warn user, else build URL
+            const baseUrl = hasApi ? window.location.origin : 'https://your-vercel-app.vercel.app'; 
+            let apiUrl = '';
+
+            if (currentGame === 'minecraft') {
+                apiUrl = `${baseUrl}/api/minecraft/face?user=${username}&size=256`;
+            } else {
+                // OW requires replacing # with - for URLs usually
+                const tag = username.replace('#', '-');
+                apiUrl = `${baseUrl}/api/overwatch/icon?user=${tag}`;
+            }
+
+            // Update UI
+            document.getElementById('apiLinkInput').value = apiUrl;
+            
+            // Load image to test
+            const img = document.getElementById('avatarPreview');
+            
+            // Create a temporary loader
+            img.style.opacity = '0.5';
+            
+            // Actually fetch the image to make sure it loads
+            const testImg = new Image();
+            testImg.src = apiUrl;
+            
+            testImg.onload = () => {
+                img.src = apiUrl;
+                img.style.opacity = '1';
+                document.getElementById('downloadLink').href = apiUrl;
+                showStatus('Avatar loaded successfully!', 'text-green-400');
+            };
+            
+            testImg.onerror = () => {
+                img.style.opacity = '1';
+                if (!hasApi) {
+                    showStatus('API not found. Deploy to Vercel to fix.', 'text-yellow-400');
+                } else {
+                    showStatus('Failed to load. Is the user valid/public?', 'text-red-400');
+                }
+            };
+        }
+
+        function showStatus(msg, colorClass, isLoading) {
+            const el = document.getElementById('statusMessage');
+            el.classList.remove('hidden');
+            el.innerHTML = isLoading 
+                ? `<div class="flex items-center justify-center gap-2"><div class="loader"></div> <span>${msg}</span></div>` 
+                : `<span class="${colorClass}">${msg}</span>`;
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById("apiLinkInput");
+            copyText.select();
+            document.execCommand("copy");
+            showStatus("Link copied to clipboard!", "text-green-400");
+        }
+
+        function openLink() {
+            const url = document.getElementById("apiLinkInput").value;
+            if(url) window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
