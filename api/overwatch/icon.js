@@ -1,6 +1,6 @@
 export default async function handler(request, response) {
-    // Usage: /api/overwatch/icon?user=Name-1234
-    const { user } = request.query || {};
+    // Usage: /api/overwatch/icon?user=Name-1234&platform=pc&region=us
+    const { user, platform = 'pc', region = 'us' } = request.query || {};
 
     if (!user) return response.status(400).json({ error: 'Missing BattleTag (e.g. Name-1234)' });
 
@@ -14,31 +14,34 @@ export default async function handler(request, response) {
     response.setHeader('Expires', '0');
 
     try {
-        // Using ow-api.com as requested
-        // We default to platform "pc" and region "us" as this covers the majority of profiles 
-        // (including cross-progression merged accounts)
-        const apiUrl = `https://ow-api.com/v1/stats/pc/us/${tag}/profile`;
+        // Using ow-api.com profile endpoint (lighter than complete)
+        // Defaults: platform=pc, region=us unless specified in query
+        const apiUrl = `https://ow-api.com/v1/stats/${platform}/${region}/${tag}/profile`;
         
         const apiRes = await fetch(apiUrl);
         
         if (!apiRes.ok) {
-            if (apiRes.status === 404) throw new Error('Player not found');
+            // Forward 404s correctly instead of masking them as 500s
+            if (apiRes.status === 404) {
+                return response.status(404).json({ error: 'Player not found. Check BattleTag, Platform, and Region.' });
+            }
             throw new Error(`External API Error: ${apiRes.status}`);
         }
         
         const data = await apiRes.json();
         
         // Extract Icon URL
-        // Even private profiles usually return an icon in this API
         if (!data.icon) {
-             throw new Error('No icon found in profile data. Profile might be restricted.');
+            // Sometimes the API returns 200 but with an error message in the body
+            if (data.msg === 'profile not found') {
+                return response.status(404).json({ error: 'Player not found' });
+            }
+             throw new Error('No icon found in profile data. Profile might be private or restricted.');
         }
 
         const iconUrl = data.icon; 
 
-        // Proxy the image
-        // We fetch the image server-side and pipe it to the client
-        // This is crucial because Blizzard's CDN might not allow direct embedding on your site via CORS
+        // Proxy the image to handle CORS
         const imageRes = await fetch(iconUrl);
         if (!imageRes.ok) throw new Error('Failed to load icon image from Blizzard CDN');
         
@@ -49,6 +52,7 @@ export default async function handler(request, response) {
 
     } catch (error) {
         console.error("OW API Error:", error);
+        // Return 500 only for actual server errors
         return response.status(500).json({ 
             error: 'Failed to fetch Overwatch icon', 
             details: error.message 
