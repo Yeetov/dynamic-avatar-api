@@ -148,28 +148,42 @@
             showStatus('Generating dynamic link...', 'text-blue-300', true);
 
             // Construct API URL
-            // If running locally without API, warn user, else build URL
             const baseUrl = hasApi ? window.location.origin : 'https://your-vercel-app.vercel.app'; 
             let apiUrl = '';
 
             if (currentGame === 'minecraft') {
                 apiUrl = `${baseUrl}/api/minecraft/face?user=${username}&size=256`;
             } else {
-                // OW requires replacing # with - for URLs usually
                 const tag = username.replace('#', '-');
                 apiUrl = `${baseUrl}/api/overwatch/icon?user=${tag}`;
             }
 
-            // Update UI
             document.getElementById('apiLinkInput').value = apiUrl;
             
-            // Load image to test
+            // Debug Phase: Fetch the URL to check for API errors (500/404)
+            if (hasApi) {
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        // Attempt to extract specific error from JSON
+                        try {
+                            const errData = await response.json();
+                            throw new Error(errData.error || response.statusText);
+                        } catch (jsonErr) {
+                            // Fallback if response isn't JSON
+                            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                } catch (e) {
+                    showStatus(e.message, 'text-red-400');
+                    return; // Stop processing
+                }
+            }
+
+            // If fetch check passed, display the image
             const img = document.getElementById('avatarPreview');
-            
-            // Create a temporary loader
             img.style.opacity = '0.5';
             
-            // Actually fetch the image to make sure it loads
             const testImg = new Image();
             testImg.src = apiUrl;
             
@@ -185,7 +199,8 @@
                 if (!hasApi) {
                     showStatus('API not found. Deploy to Vercel to fix.', 'text-yellow-400');
                 } else {
-                    showStatus('Failed to load. Is the user valid/public?', 'text-red-400');
+                    // This fallback triggers if fetch() worked but <img> failed (rare, usually CORS related)
+                    showStatus('Failed to load image. Is the user valid?', 'text-red-400');
                 }
             };
         }
