@@ -129,8 +129,9 @@
                 img.classList.add('pixelated', 'rounded-lg');
             } else {
                 input.placeholder = "BattleTag (Name#1234)";
-                img.classList.remove('pixelated', 'rounded-lg');
-                img.classList.add('smooth', 'rounded-full'); // OW icons are circles usually
+                img.classList.remove('pixelated', 'rounded-full');
+                // FIX: Changed from rounded-full to rounded-lg to stop circle crop
+                img.classList.add('smooth', 'rounded-lg'); 
             }
             
             // Clear previous
@@ -165,18 +166,16 @@
                 try {
                     const response = await fetch(apiUrl);
                     if (!response.ok) {
-                        // Attempt to extract specific error from JSON
                         try {
                             const errData = await response.json();
                             throw new Error(errData.error || response.statusText);
                         } catch (jsonErr) {
-                            // Fallback if response isn't JSON
                             throw new Error(`API Error: ${response.status} ${response.statusText}`);
                         }
                     }
                 } catch (e) {
                     showStatus(e.message, 'text-red-400');
-                    return; // Stop processing
+                    return; 
                 }
             }
 
@@ -199,7 +198,6 @@
                 if (!hasApi) {
                     showStatus('API not found. Deploy to Vercel to fix.', 'text-yellow-400');
                 } else {
-                    // This fallback triggers if fetch() worked but <img> failed (rare, usually CORS related)
                     showStatus('Failed to load image. Is the user valid?', 'text-red-400');
                 }
             };
