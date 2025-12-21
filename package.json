@@ -1,0 +1,13 @@
+{
+  "name": "universal-game-avatars",
+  "version": "1.0.0",
+  "description": "Dynamic Avatar API for Minecraft, Overwatch 2, and more.",
+  "main": "api/minecraft/face.js",
+  "license": "MIT",
+  "dependencies": {
+    "jimp": "^0.22.10"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
