@@ -1,213 +1,293 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- NUCLEAR CACHE BUSTING: Forces browser to re-fetch everything on reload -->
+    <!-- NUCLEAR CACHE BUSTING -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>Universal Game Avatars</title>
+    <title>AvatarAPI | Dynamic Game Assets for the Web</title>
+    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, and Roblox avatars on your website. No uploads required.">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;600;800&display=swap');
         
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; 
-            color: #e2e8f0;
-            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 70%);
-            min-height: 100vh;
+            background-color: #020617; 
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Dynamic Background */
+        .bg-grid {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
         }
 
         .pixelated { image-rendering: pixelated; }
         .smooth { image-rendering: auto; }
         
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .game-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            transition: all 0.2s ease;
         }
         
-        .game-btn::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: #3b82f6;
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
+        .game-btn.active { 
+            background-color: rgba(59, 130, 246, 0.15); 
+            color: #60a5fa; 
+            border-bottom: 2px solid #60a5fa;
         }
         
-        .game-btn.active::after { transform: scaleX(1); }
-        .game-btn.active { background-color: rgba(59, 130, 246, 0.1); color: white; }
-        
-        .loader {
-            border: 2px solid rgba(255,255,255,0.1);
-            border-left-color: #3b82f6;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        .game-btn:not(.active):hover {
+            color: #94a3b8;
+            background-color: rgba(255,255,255,0.03);
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .code-block {
-            font-family: 'JetBrains Mono', monospace;
-            background: #020617;
-            border: 1px solid #1e293b;
+        .loader {
+            width: 24px; height: 24px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-bottom-color: #60a5fa;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
         }
-        
-        /* Remove number input arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center py-12 px-4">
+<body class="min-h-screen flex flex-col relative selection:bg-blue-500/30">
 
-    <!-- Header -->
-    <div class="text-center mb-10 space-y-3">
-        <div class="inline-flex items-center justify-center p-3 bg-blue-500/10 rounded-2xl mb-2">
-            <i class="fas fa-cube text-blue-500 text-3xl"></i>
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 bg-grid z-0 pointer-events-none"></div>
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -z-10 opacity-50"></div>
+    <div class="fixed bottom-0 right-0 w-[600px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] -z-10 opacity-30"></div>
+
+    <!-- Navigation -->
+    <nav class="relative z-50 w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i class="fas fa-cube text-white text-sm"></i>
+            </div>
+            <span class="font-bold text-xl tracking-tight text-white">Avatar<span class="font-light text-slate-400">API</span></span>
         </div>
-        <h1 class="text-5xl font-extrabold text-white tracking-tight">
-            Avatar<span class="text-blue-500">API</span>
-        </h1>
-        <p class="text-slate-400 font-medium">Developer-ready avatars for Minecraft, Overwatch & Roblox</p>
-    </div>
+        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-400">
+            <a href="#demo" class="hover:text-white transition-colors">Generator</a>
+            <a href="#integration" class="hover:text-white transition-colors">Integration</a>
+            <a href="https://github.com" target="_blank" class="hover:text-white transition-colors"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+    </nav>
 
-    <!-- Main Card -->
-    <div class="glass-panel rounded-2xl w-full max-w-3xl overflow-hidden transition-all duration-500">
+    <!-- Hero Section -->
+    <main class="relative z-10 w-full max-w-5xl mx-auto px-4 pt-12 pb-24 flex flex-col items-center text-center">
         
-        <!-- Game Selector Tabs -->
-        <div class="flex border-b border-white/5 bg-slate-900/50">
-            <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 hover:bg-slate-800/50">
-                <i class="fas fa-cube"></i> Minecraft
-            </button>
-            <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 text-slate-400 hover:bg-slate-800/50">
-                <i class="fab fa-battle-net"></i> Overwatch 2
-            </button>
-            <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 text-slate-400 hover:bg-slate-800/50">
-                <i class="fas fa-robot"></i> Roblox
-            </button>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            Live API v2.0
         </div>
 
-        <div class="p-6 md:p-8">
-            
-            <!-- Input Area -->
-            <div class="flex flex-col gap-4 mb-8">
-                <!-- User Input -->
-                <div class="flex flex-col md:flex-row gap-3">
-                    <div class="relative flex-grow group">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" id="usernameInput" 
-                            class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-600"
-                            placeholder="Minecraft Username (e.g. Notch)" 
-                            autocomplete="off"
-                            onkeydown="if(event.key === 'Enter') fetchAvatar()">
-                    </div>
-                    
-                    <!-- Custom Size Input -->
-                    <div class="relative w-full md:w-32 group">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs font-bold uppercase tracking-wider">px</span>
-                        <input type="number" id="sizeInput" 
-                            class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-9 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-500"
-                            placeholder="256" value="256" min="16" max="2048"
-                            onkeydown="if(event.key === 'Enter') fetchAvatar()">
-                    </div>
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+            One Link.<br>
+            <span class="gradient-text">Infinite Updates.</span>
+        </h1>
+        
+        <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
+            Stop manually uploading profile pictures. Use our dynamic API to display your 
+            <span class="text-white font-semibold">Minecraft</span>, 
+            <span class="text-white font-semibold">Overwatch</span>, and 
+            <span class="text-white font-semibold">Roblox</span> avatars on your portfolio, apps, or Discord. 
+            Change it in-game, it updates everywhere.
+        </p>
 
-                    <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95 whitespace-nowrap">
-                        <span>Generate</span>
-                        <i class="fas fa-arrow-right text-sm"></i>
+        <!-- THE GENERATOR -->
+        <div id="demo" class="w-full relative group">
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+            
+            <div class="glass-panel rounded-xl overflow-hidden relative">
+                
+                <!-- Toolbar -->
+                <div class="flex flex-wrap border-b border-white/5 bg-slate-900/40">
+                    <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5">
+                        <i class="fas fa-cube"></i> Minecraft
+                    </button>
+                    <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                        <i class="fab fa-battle-net"></i> Overwatch 2
+                    </button>
+                    <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                        <i class="fas fa-shapes"></i> Roblox
                     </button>
                 </div>
-            </div>
 
-            <!-- Result Area -->
-            <div class="flex flex-col md:flex-row gap-8 items-start">
-                
-                <!-- Image Preview -->
-                <div class="w-full md:w-auto flex justify-center">
-                    <div class="relative group">
-                        <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
-                        <div class="relative bg-slate-800 p-2 rounded-lg border border-slate-700">
-                            <!-- Clean Dark Background (No Checkerboard) -->
-                            <div class="w-48 h-48 bg-slate-800 rounded overflow-hidden relative flex items-center justify-center">
-                                <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
-                                    class="max-w-full max-h-full object-contain pixelated z-10 relative" alt="Avatar Preview">
-                                
-                                <!-- Loading Overlay -->
-                                <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 hidden z-20">
-                                    <div class="loader"></div>
-                                </div>
+                <div class="p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center md:items-start">
+                    
+                    <!-- Left: Preview -->
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="relative w-48 h-48 bg-slate-800 rounded-xl border border-white/10 flex items-center justify-center shadow-inner overflow-hidden group/img">
+                            <!-- Background Grid for transparency check -->
+                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                            
+                            <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
+                                class="w-full h-full object-contain z-10 relative pixelated transition-all duration-300 group-hover/img:scale-105" alt="Preview">
+                            
+                            <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 hidden z-20">
+                                <div class="loader"></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- API Details -->
-                <div class="flex-grow w-full space-y-4">
-                    
-                    <!-- Status Message -->
-                    <div id="statusContainer" class="hidden rounded-lg p-3 bg-red-500/10 border border-red-500/20 text-red-200 text-sm flex items-center gap-2">
-                        <i class="fas fa-circle-exclamation"></i>
-                        <span id="statusText">Error message here</span>
+                        <a id="downloadLinkBtn" href="#" download class="text-xs font-medium text-slate-500 hover:text-white flex items-center gap-2 transition-colors pointer-events-none opacity-50">
+                            <i class="fas fa-download"></i> Download PNG
+                        </a>
                     </div>
 
-                    <!-- URL Box -->
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center px-1">
-                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct API Link</label>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">GET</span>
-                        </div>
+                    <!-- Right: Controls -->
+                    <div class="flex-grow w-full space-y-6">
                         
-                        <div class="relative group">
-                            <input type="text" id="apiLinkInput" readonly 
-                                class="code-block w-full text-slate-300 text-sm rounded-lg p-3 pr-12 focus:outline-none"
-                                value="Waiting for input...">
-                            
-                            <button onclick="copyLink()" class="absolute right-2 top-2 p-1.5 text-slate-500 hover:text-white transition-colors" title="Copy to clipboard">
-                                <i class="far fa-copy"></i>
-                            </button>
+                        <!-- Inputs Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="md:col-span-3 space-y-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Username / ID</label>
+                                <div class="relative">
+                                    <input type="text" id="usernameInput" 
+                                        class="w-full bg-slate-900/50 border border-slate-700 focus:border-blue-500 text-white rounded-lg py-3 px-4 outline-none transition-all placeholder-slate-600 font-medium"
+                                        placeholder="Username" autocomplete="off"
+                                        onkeydown="if(event.key === 'Enter') fetchAvatar()">
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Size (px)</label>
+                                <input type="number" id="sizeInput" value="256" min="32" max="2048"
+                                    class="w-full bg-slate-900/50 border border-slate-700 focus:border-blue-500 text-white rounded-lg py-3 px-4 outline-none transition-all text-center font-mono"
+                                    onkeydown="if(event.key === 'Enter') fetchAvatar()">
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Helper Text -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <a id="openLinkBtn" href="#" target="_blank" class="text-center p-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs transition-colors pointer-events-none opacity-50">
-                            <i class="fas fa-external-link-alt mr-1"></i> Open in Browser
-                        </a>
-                        <a id="downloadLinkBtn" href="#" download class="text-center p-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs transition-colors pointer-events-none opacity-50">
-                            <i class="fas fa-download mr-1"></i> Download PNG
-                        </a>
-                    </div>
+                        <button onclick="fetchAvatar()" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i> Generate Link
+                        </button>
 
+                        <!-- Output Section -->
+                        <div class="space-y-3 pt-2">
+                            <div class="flex justify-between items-end px-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Integration Code</label>
+                                <!-- Format Toggle -->
+                                <div class="flex bg-slate-800 rounded-md p-0.5 border border-slate-700">
+                                    <button onclick="setFormat('url')" class="fmt-btn active px-2 py-0.5 text-[10px] font-bold rounded text-slate-300 hover:text-white">URL</button>
+                                    <button onclick="setFormat('html')" class="fmt-btn px-2 py-0.5 text-[10px] font-bold rounded text-slate-500 hover:text-white">HTML</button>
+                                    <button onclick="setFormat('md')" class="fmt-btn px-2 py-0.5 text-[10px] font-bold rounded text-slate-500 hover:text-white">Markdown</button>
+                                </div>
+                            </div>
+                            
+                            <div class="relative group">
+                                <input type="text" id="apiLinkInput" readonly 
+                                    class="w-full bg-slate-950 border border-slate-800 text-blue-400 font-mono text-xs rounded-lg p-4 pr-24 outline-none select-all"
+                                    value="// Ready to generate">
+                                
+                                <div class="absolute right-2 top-2 bottom-2 flex gap-1">
+                                    <button onclick="copyLink()" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors text-xs font-medium">
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Error Message -->
+                            <div id="statusContainer" class="hidden text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-3 rounded-lg flex items-center gap-2">
+                                <i class="fas fa-circle-xmark"></i> <span id="statusText">Error</span>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-
         </div>
-    </div>
+
+    </main>
+
+    <!-- Integration Section -->
+    <section id="integration" class="w-full max-w-5xl mx-auto px-6 pb-24">
+        <h2 class="text-2xl font-bold mb-8 text-center text-slate-200">Built for Developers</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Card 1 -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <div class="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center text-orange-500 mb-4">
+                    <i class="fab fa-html5 text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-2">Portfolio Ready</h3>
+                <p class="text-sm text-slate-400 mb-4">Use a simple `img` tag. The image loads directly from our optimized API.</p>
+                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
+                    &lt;img src=".../api/minecraft/face?user=Notch" /&gt;
+                </code>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500 mb-4">
+                    <i class="fab fa-react text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-2">React & Next.js</h3>
+                <p class="text-sm text-slate-400 mb-4">Perfect for dynamic user cards or dashboards. Just pass the username.</p>
+                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
+                    &lt;Avatar src={`.../user=${username}`} /&gt;
+                </code>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
+                <div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-500 mb-4">
+                    <i class="fab fa-markdown text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-2">GitHub Readme</h3>
+                <p class="text-sm text-slate-400 mb-4">Show off your current skin in your GitHub profile README.md.</p>
+                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
+                    ![My Skin](.../api/minecraft/face?user=Me)
+                </code>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/50 bg-slate-950/50 py-12">
+        <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-slate-500 text-sm">
+                &copy; 2024 AvatarAPI. Not affiliated with Mojang, Blizzard, or Roblox.
+            </div>
+            <div class="flex gap-4">
+                <a href="#" class="text-slate-500 hover:text-white transition-colors"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-slate-500 hover:text-white transition-colors"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         let currentGame = 'minecraft';
+        let currentUrl = '';
+        let currentFormat = 'url';
+        
         const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : window.location.origin;
         const hasApi = window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file');
 
@@ -216,7 +296,7 @@
             
             // UI Toggles
             document.querySelectorAll('.game-btn').forEach(b => {
-                b.classList.remove('active');
+                b.classList.remove('active', 'text-blue-400', 'border-blue-500');
                 b.classList.add('text-slate-400');
             });
             
@@ -229,32 +309,46 @@
             const img = document.getElementById('avatarPreview');
 
             if (game === 'minecraft') {
-                input.placeholder = "Minecraft Username (e.g. Notch)";
+                input.placeholder = "e.g. Notch";
                 img.classList.remove('smooth');
                 img.classList.add('pixelated');
             } else if (game === 'overwatch') {
-                input.placeholder = "BattleTag (e.g. Name#1234)";
+                input.placeholder = "e.g. Name#1234";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
             } else if (game === 'roblox') {
-                input.placeholder = "Roblox Username (e.g. Roblox)";
+                input.placeholder = "e.g. Roblox";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
             }
             
             // Reset
-            input.value = '';
-            document.getElementById('apiLinkInput').value = 'Waiting for input...';
+            // input.value = ''; // Optional: Keep value to let user switch game easily?
+            resetOutput();
+        }
+
+        function setFormat(fmt) {
+            currentFormat = fmt;
+            document.querySelectorAll('.fmt-btn').forEach(b => {
+                b.classList.remove('active', 'bg-slate-600', 'text-white');
+                b.classList.add('text-slate-500');
+            });
+            event.target.classList.add('active', 'text-white'); // Simple active state logic
+            updateOutputText();
+        }
+
+        function resetOutput() {
+            document.getElementById('apiLinkInput').value = '// Ready to generate';
             document.getElementById('statusContainer').classList.add('hidden');
-            img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            document.getElementById('avatarPreview').src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
             disableActions(true);
+            currentUrl = '';
         }
 
         async function fetchAvatar() {
             const input = document.getElementById('usernameInput');
             const sizeInput = document.getElementById('sizeInput');
             const username = input.value.trim();
-            // Default size 256 if empty
             const size = sizeInput.value.trim() || '256';
 
             if (!username) return;
@@ -265,22 +359,21 @@
             const img = document.getElementById('avatarPreview');
             img.style.opacity = '0.3';
 
-            let apiUrl = '';
-            
-            if (currentGame === 'minecraft') {
-                apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=${size}`;
-            } else if (currentGame === 'overwatch') {
-                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(username)}&size=${size}`;
-            } else if (currentGame === 'roblox') {
-                apiUrl = `${baseUrl}/api/roblox/avatar?user=${encodeURIComponent(username)}&size=${size}`;
-            }
+            let endpoint = '';
+            if (currentGame === 'minecraft') endpoint = '/api/minecraft/face';
+            else if (currentGame === 'overwatch') endpoint = '/api/overwatch/icon';
+            else if (currentGame === 'roblox') endpoint = '/api/roblox/avatar';
 
-            // CACHE BUSTING (Only for preview image, NOT for the text link)
+            // Construct URL
+            const finalUrl = `${baseUrl}${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
+            currentUrl = finalUrl; // Store clean URL
+
+            // Update Text Output immediately
+            updateOutputText();
+
+            // Preview Image (Cache busted)
             const cacheBuster = `&t=${Date.now()}`;
-            const displayUrl = apiUrl + cacheBuster;
-
-            // Set the inputs to the CLEAN URL
-            document.getElementById('apiLinkInput').value = apiUrl;
+            const displayUrl = finalUrl + cacheBuster;
             
             const tempImg = new Image();
             tempImg.src = displayUrl;
@@ -290,11 +383,8 @@
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
                 
-                const openBtn = document.getElementById('openLinkBtn');
-                openBtn.href = apiUrl; // Clean URL
-                
                 const dlBtn = document.getElementById('downloadLinkBtn');
-                dlBtn.href = apiUrl; // Clean URL
+                dlBtn.href = finalUrl;
                 dlBtn.download = `${username}_avatar.png`;
                 
                 disableActions(false);
@@ -305,12 +395,28 @@
                 document.getElementById('imgLoader').classList.add('hidden');
                 
                 const msg = !hasApi 
-                    ? "API endpoints not found. Please deploy to Vercel."
+                    ? "API endpoints not found. Deploy to Vercel."
                     : (currentGame === 'overwatch' ? "Player not found. Try 'Name-1234'." : "User not found.");
 
                 showError(msg);
                 disableActions(true);
+                currentUrl = ''; // Clear valid URL on error
+                document.getElementById('apiLinkInput').value = '// Error: User not found';
             };
+        }
+
+        function updateOutputText() {
+            if (!currentUrl) return;
+            
+            const input = document.getElementById('apiLinkInput');
+            
+            if (currentFormat === 'url') {
+                input.value = currentUrl;
+            } else if (currentFormat === 'html') {
+                input.value = `<img src="${currentUrl}" alt="Avatar" />`;
+            } else if (currentFormat === 'md') {
+                input.value = `![Avatar](${currentUrl})`;
+            }
         }
 
         function showError(msg) {
@@ -320,26 +426,37 @@
         }
 
         function disableActions(disable) {
-            const els = [document.getElementById('openLinkBtn'), document.getElementById('downloadLinkBtn')];
-            els.forEach(el => {
-                if(disable) {
-                    el.classList.add('pointer-events-none', 'opacity-50');
-                } else {
-                    el.classList.remove('pointer-events-none', 'opacity-50');
-                }
-            });
+            const el = document.getElementById('downloadLinkBtn');
+            if(disable) {
+                el.classList.add('pointer-events-none', 'opacity-50');
+            } else {
+                el.classList.remove('pointer-events-none', 'opacity-50');
+            }
         }
 
         function copyLink() {
             const copyText = document.getElementById("apiLinkInput");
-            if (copyText.value === 'Waiting for input...') return;
+            if (copyText.value.startsWith('//')) return;
             copyText.select();
             document.execCommand("copy");
-            const btn = copyText.nextElementSibling;
-            const originalIcon = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
-            setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
+            
+            // Pulse effect on copy button
+            const btn = copyText.nextElementSibling.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.classList.add('text-green-400', 'border-green-500/50');
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                btn.classList.remove('text-green-400', 'border-green-500/50');
+            }, 2000);
         }
+        
+        // CSS Utility for active tab
+        const style = document.createElement('style');
+        style.textContent = `
+            .fmt-btn.active { background-color: #334155; color: white; }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
