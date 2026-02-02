@@ -12,93 +12,73 @@ export default async function handler(request, response) {
         return response.status(400).json({ error: 'Missing "user" parameter' });
     }
 
-    // Disable caching to ensure fresh skins
-    response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    response.setHeader('Pragma', 'no-cache');
-    response.setHeader('Expires', '0');
+    // PERFORMANCE: Enable Caching
+    // Browser cache: 1 hour. CDN/Vercel Cache: 2 hours.
+    // This drastically reduces function execution costs.
+    response.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=7200');
 
     try {
-        let skin = null;
+        let skinUrl = null;
 
-        // METHOD 1: Minecraft.tools (User Requested)
-        // Fetches directly using username
+        // STRATEGY: Resolve Username -> Skin URL
+        // 1. Ashcon API (Fastest, caches Mojang data)
         try {
-            console.log(`Attempting direct fetch from minecraft.tools for: ${targetUser}`);
-            const toolsUrl = `https://minecraft.tools/download-skin/${targetUser}`;
-            
-            const toolsRes = await fetch(toolsUrl);
-            
-            // Verify we got an image back (not an error page)
-            const contentType = toolsRes.headers.get('content-type');
-            if (toolsRes.ok && contentType && contentType.includes('image')) {
-                const buffer = await toolsRes.arrayBuffer();
-                skin = await JimpConstructor.read(Buffer.from(buffer));
-                console.log("Successfully loaded skin from minecraft.tools");
-            } else {
-                console.warn(`minecraft.tools returned ${toolsRes.status} or non-image content`);
+            const ashconRes = await fetch(`https://api.ashcon.app/mojang/v2/user/${targetUser}`);
+            if (ashconRes.ok) {
+                const data = await ashconRes.json();
+                skinUrl = data.textures.skin.url;
             }
         } catch (e) {
-            console.warn("minecraft.tools fetch failed:", e.message);
+            console.warn("Ashcon API failed, trying fallback...", e.message);
         }
 
-        // METHOD 2: Fallback (UUID Resolution) if Method 1 fails
-        // This runs if minecraft.tools is down, rate-limited, or can't find the user
-        if (!skin) {
-            console.log("Falling back to standard UUID lookup...");
-            let uuid = null;
-            
-            // 1. Get UUID
+        // 2. Fallback: PlayerDB (If Ashcon fails)
+        if (!skinUrl) {
             try {
-                const r = await fetch(`https://playerdb.co/api/player/minecraft/${targetUser}`);
-                if (r.ok) {
-                    const data = await r.json();
-                    if (data.code === 'player.found') uuid = data.data.player.raw_id;
-                }
-            } catch (e) {}
-
-            if (!uuid) {
-                try {
-                    const r = await fetch(`https://api.ashcon.app/mojang/v2/user/${targetUser}`);
-                    if (r.ok) uuid = (await r.json()).uuid.replace(/-/g, '');
-                } catch (e) {}
-            }
-
-            if (!uuid) throw new Error('User not found via Direct Link or UUID lookup');
-
-            // 2. Get Skin URL (Direct Mojang or Crafatar)
-            let skinUrl = `https://crafatar.com/skins/${uuid}`;
-            const timestamp = Date.now();
-            
-            // Try Direct Mojang Session
-            try {
-                const mojangRes = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}?unsigned=false&t=${timestamp}`);
-                if (mojangRes.ok) {
-                    const profile = await mojangRes.json();
-                    if (profile.properties?.[0]?.value) {
-                        const decoded = JSON.parse(Buffer.from(profile.properties[0].value, 'base64').toString());
-                        if (decoded.textures?.SKIN?.url) skinUrl = decoded.textures.SKIN.url;
+                const playerDbRes = await fetch(`https://playerdb.co/api/player/minecraft/${targetUser}`);
+                if (playerDbRes.ok) {
+                    const data = await playerDbRes.json();
+                    if (data.success) {
+                        // Decode the textures from the base64 value in properties
+                        const props = data.data.player.properties;
+                        const textureProp = props.find(p => p.name === 'textures');
+                        if (textureProp) {
+                            const decoded = JSON.parse(Buffer.from(textureProp.value, 'base64').toString());
+                            skinUrl = decoded.textures.SKIN.url;
+                        }
                     }
                 }
-            } catch (e) {}
-
-            skin = await JimpConstructor.read(skinUrl);
+            } catch (e) {
+                console.warn("PlayerDB failed", e.message);
+            }
         }
 
-        // PROCESSING: Create 2-Layer Face
+        // 3. Last Resort: Crafatar default (Steve/Alex) based on UUID or just fail
+        if (!skinUrl) {
+            // If we can't find the user, return 404 so the client knows
+            return response.status(404).json({ error: 'User not found' });
+        }
+
+        // PROCESSING: JIMP Image Composition
+        // Read the skin texture
+        const skin = await JimpConstructor.read(skinUrl);
+
         // Create new blank image (8x8 canvas)
         const face = new JimpConstructor(8, 8, 0x00000000);
-        
+
         // Layer 1: Face (Source: 8,8, size 8x8)
         face.composite(skin.clone().crop(8, 8, 8, 8), 0, 0);
-        
+
         // Layer 2: Hat/Overlay (Source: 40,8, size 8x8)
-        face.composite(skin.clone().crop(40, 8, 8, 8), 0, 0);
-        
+        // Check if the area actually has pixels (some skins are buggy)
+        const overlay = skin.clone().crop(40, 8, 8, 8);
+        face.composite(overlay, 0, 0);
+
         // Resize using Nearest Neighbor to keep it pixelated and crisp
         face.resize(size, size, JimpConstructor.RESIZE_NEAREST_NEIGHBOR);
 
         const buffer = await face.getBufferAsync(JimpConstructor.MIME_PNG);
-        
+
         response.setHeader('Content-Type', 'image/png');
         response.send(buffer);
 
