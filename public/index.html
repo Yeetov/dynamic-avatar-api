@@ -76,7 +76,7 @@
         <h1 class="text-5xl font-extrabold text-white tracking-tight">
             Avatar<span class="text-blue-500">API</span>
         </h1>
-        <p class="text-slate-400 font-medium">Developer-ready avatars for Minecraft & Overwatch</p>
+        <p class="text-slate-400 font-medium">Developer-ready avatars for Minecraft, Overwatch & Roblox</p>
     </div>
 
     <!-- Main Card -->
@@ -90,26 +90,46 @@
             <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 text-slate-400 hover:bg-slate-800/50">
                 <i class="fab fa-battle-net"></i> Overwatch 2
             </button>
+            <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 text-slate-400 hover:bg-slate-800/50">
+                <i class="fas fa-robot"></i> Roblox
+            </button>
         </div>
 
         <div class="p-6 md:p-8">
             
             <!-- Input Area -->
-            <div class="flex flex-col md:flex-row gap-3 mb-8">
-                <div class="relative flex-grow group">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-blue-400 transition-colors">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" id="usernameInput" 
-                        class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-600"
-                        placeholder="Minecraft Username (e.g. Notch)" 
-                        autocomplete="off"
-                        onkeydown="if(event.key === 'Enter') fetchAvatar()">
+            <div class="flex flex-col gap-4 mb-8">
+                <!-- User Input -->
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-grow group">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="usernameInput" 
+                            class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-600"
+                            placeholder="Minecraft Username (e.g. Notch)" 
+                            autocomplete="off"
+                            onkeydown="if(event.key === 'Enter') fetchAvatar()">
+                    </div>
+                    
+                    <!-- Size Selector -->
+                    <div class="relative min-w-[120px]">
+                        <select id="sizeInput" class="w-full h-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer">
+                            <option value="64">64px</option>
+                            <option value="128">128px</option>
+                            <option value="256" selected>256px</option>
+                            <option value="512">512px</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </span>
+                    </div>
+
+                    <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95 whitespace-nowrap">
+                        <span>Generate</span>
+                        <i class="fas fa-arrow-right text-sm"></i>
+                    </button>
                 </div>
-                <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
-                    <span>Generate</span>
-                    <i class="fas fa-arrow-right text-sm"></i>
-                </button>
             </div>
 
             <!-- Result Area -->
@@ -120,7 +140,7 @@
                     <div class="relative group">
                         <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
                         <div class="relative bg-slate-900 p-2 rounded-lg border border-slate-700">
-                            <!-- Background checkerboard pattern for transparency -->
+                            <!-- Checkerboard -->
                             <div class="w-48 h-48 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAHElEQVQYlWNgYGBg+P///38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==')] rounded overflow-hidden relative">
                                 <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
                                     class="w-full h-full object-contain pixelated z-10 relative" alt="Avatar Preview">
@@ -203,8 +223,12 @@
                 input.placeholder = "Minecraft Username (e.g. Notch)";
                 img.classList.remove('smooth');
                 img.classList.add('pixelated');
-            } else {
+            } else if (game === 'overwatch') {
                 input.placeholder = "BattleTag (e.g. Name#1234)";
+                img.classList.remove('pixelated');
+                img.classList.add('smooth');
+            } else if (game === 'roblox') {
+                input.placeholder = "Roblox Username (e.g. Roblox)";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
             }
@@ -219,7 +243,10 @@
 
         async function fetchAvatar() {
             const input = document.getElementById('usernameInput');
+            const sizeInput = document.getElementById('sizeInput');
             const username = input.value.trim();
+            const size = sizeInput.value;
+
             if (!username) return;
 
             // UI Loading State
@@ -231,21 +258,19 @@
             let apiUrl = '';
             
             if (currentGame === 'minecraft') {
-                apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=256`;
-            } else {
-                // Send raw username (no replacing # with - here) so the clean link works properly
-                // The backend handles the # vs - difference
-                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(username)}`;
+                apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=${size}`;
+            } else if (currentGame === 'overwatch') {
+                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(username)}&size=${size}`;
+            } else if (currentGame === 'roblox') {
+                apiUrl = `${baseUrl}/api/roblox/avatar?user=${encodeURIComponent(username)}&size=${size}`;
             }
 
-            // CACHE BUSTING (Only for the preview image to force update)
+            // CACHE BUSTING (Only for preview)
             const cacheBuster = `&t=${Date.now()}`;
             const displayUrl = apiUrl + cacheBuster;
 
-            // Set the inputs to the CLEAN URL (without timestamp)
             document.getElementById('apiLinkInput').value = apiUrl;
             
-            // Check availability using the display URL (forces fresh check)
             const tempImg = new Image();
             tempImg.src = displayUrl;
 
@@ -254,9 +279,8 @@
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
                 
-                // Set buttons to use the CLEAN URL
                 const openBtn = document.getElementById('openLinkBtn');
-                openBtn.href = apiUrl; 
+                openBtn.href = apiUrl;
                 
                 const dlBtn = document.getElementById('downloadLinkBtn');
                 dlBtn.href = apiUrl;
@@ -271,7 +295,7 @@
                 
                 const msg = !hasApi 
                     ? "API endpoints not found. Please deploy to Vercel."
-                    : (currentGame === 'overwatch' ? "Player not found. Try 'Name-1234' format." : "User not found.");
+                    : (currentGame === 'overwatch' ? "Player not found. Try 'Name-1234'." : "User not found.");
 
                 showError(msg);
                 disableActions(true);
