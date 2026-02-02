@@ -15,18 +15,32 @@ export default async function handler(request, response) {
     response.setHeader('Expires', '0');
 
     try {
-        // 1. Resolve Username to ID
-        // Roblox "users" API
-        const userRes = await fetch(`https://users.roblox.com/v1/users/search?keyword=${user}&limit=10`);
-        const userData = await userRes.json();
+        // 1. Resolve Username to ID (Robust POST method)
+        // We use the batch endpoint which is more reliable than search for exact lookups
+        const idRes = await fetch('https://users.roblox.com/v1/usernames/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'AvatarAPI/1.0'
+            },
+            body: JSON.stringify({
+                usernames: [user],
+                excludeBannedUsers: true
+            })
+        });
 
-        if (!userData.data || userData.data.length === 0) {
+        if (!idRes.ok) {
+            throw new Error(`Roblox User API Error: ${idRes.status}`);
+        }
+
+        const idData = await idRes.json();
+
+        // Check if the user was actually found
+        if (!idData.data || idData.data.length === 0) {
             return response.status(404).json({ error: 'User not found' });
         }
 
-        // The API returns fuzzy matches, we want the exact one if possible
-        const targetUser = userData.data.find(u => u.name.toLowerCase() === user.toLowerCase()) || userData.data[0];
-        const userId = targetUser.id;
+        const userId = idData.data[0].id;
 
         // 2. Fetch Avatar Headshot
         // Roblox supports specific sizes: 48, 60, 150, 420, 720. 
@@ -37,14 +51,21 @@ export default async function handler(request, response) {
         const thumbRes = await fetch(thumbUrl);
         const thumbData = await thumbRes.json();
 
-        if (!thumbData.data || !thumbData.data[0] || thumbData.data[0].state !== 'Completed') {
-            throw new Error('Avatar thumbnail not available or pending');
+        if (!thumbData.data || !thumbData.data[0]) {
+            throw new Error('Avatar thumbnail data missing');
+        }
+
+        if (thumbData.data[0].state !== 'Completed') {
+             // Sometimes thumbnails are "Pending" or "Error"
+             throw new Error(`Avatar thumbnail state is ${thumbData.data[0].state}`);
         }
 
         const imageUrl = thumbData.data[0].imageUrl;
 
         // 3. Resize Image
         const imageRes = await fetch(imageUrl);
+        if (!imageRes.ok) throw new Error('Failed to download image from Roblox CDN');
+        
         const imageBuffer = await imageRes.arrayBuffer();
 
         const image = await JimpConstructor.read(Buffer.from(imageBuffer));
