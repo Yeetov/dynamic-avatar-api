@@ -17,13 +17,9 @@
             min-height: 100vh;
         }
 
-        /* Pixelated for Minecraft, Smooth for OW */
-        .pixelated { 
-            image-rendering: pixelated;
-        }
+        .pixelated { image-rendering: pixelated; }
         .smooth { image-rendering: auto; }
         
-        /* Glassmorphism Card */
         .glass-panel {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
@@ -63,7 +59,6 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Code Block Styling */
         .code-block {
             font-family: 'JetBrains Mono', monospace;
             background: #020617;
@@ -182,13 +177,9 @@
         </div>
     </div>
 
-    <div class="mt-8 text-slate-600 text-sm">
-        <p>Use <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-400">/api/minecraft/face</code> or <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-400">/api/overwatch/icon</code></p>
-    </div>
-
     <script>
         let currentGame = 'minecraft';
-        const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : window.location.origin; // Adapts to Vercel automatically
+        const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : window.location.origin;
         const hasApi = window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file');
 
         function switchGame(game) {
@@ -238,31 +229,37 @@
             img.style.opacity = '0.3';
 
             let apiUrl = '';
+            
             if (currentGame === 'minecraft') {
                 apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=256`;
             } else {
-                const tag = username.replace('#', '-');
+                // Ensure the # is properly handled if the user typed it
+                // We DON'T replace here manually anymore, we let encodeURIComponent handle it
+                // and let the backend decide whether to use direct or search
+                // BUT for cleaner URLs, replacing # with - is standard for OW APIs
+                const tag = username.replace('#', '-'); 
                 apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(tag)}`;
             }
 
-            // Set the inputs immediately so user sees the link
+            // CACHE BUSTING
+            const cacheBuster = `&t=${Date.now()}`;
+            const displayUrl = apiUrl + cacheBuster;
+
             document.getElementById('apiLinkInput').value = apiUrl;
             
-            // Preload image to check for errors
             const tempImg = new Image();
-            tempImg.src = apiUrl;
+            tempImg.src = displayUrl;
 
             tempImg.onload = function() {
-                img.src = apiUrl;
+                img.src = displayUrl;
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
                 
-                // Enable buttons
                 const openBtn = document.getElementById('openLinkBtn');
-                openBtn.href = apiUrl;
+                openBtn.href = displayUrl;
                 
                 const dlBtn = document.getElementById('downloadLinkBtn');
-                dlBtn.href = apiUrl;
+                dlBtn.href = displayUrl;
                 dlBtn.download = `${username}_avatar.png`;
                 
                 disableActions(false);
@@ -274,7 +271,7 @@
                 
                 const msg = !hasApi 
                     ? "API endpoints not found. Please deploy to Vercel."
-                    : (currentGame === 'overwatch' ? "Player not found or Private Profile." : "User not found.");
+                    : (currentGame === 'overwatch' ? "Player not found. Try 'Name-1234' format." : "User not found.");
 
                 showError(msg);
                 disableActions(true);
@@ -301,11 +298,8 @@
         function copyLink() {
             const copyText = document.getElementById("apiLinkInput");
             if (copyText.value === 'Waiting for input...') return;
-            
             copyText.select();
             document.execCommand("copy");
-            
-            // Visual feedback
             const btn = copyText.nextElementSibling;
             const originalIcon = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
