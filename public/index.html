@@ -64,6 +64,13 @@
             background: #020617;
             border: 1px solid #1e293b;
         }
+        
+        /* Remove number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center py-12 px-4">
@@ -112,17 +119,13 @@
                             onkeydown="if(event.key === 'Enter') fetchAvatar()">
                     </div>
                     
-                    <!-- Size Selector -->
-                    <div class="relative min-w-[120px]">
-                        <select id="sizeInput" class="w-full h-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer">
-                            <option value="64">64px</option>
-                            <option value="128">128px</option>
-                            <option value="256" selected>256px</option>
-                            <option value="512">512px</option>
-                        </select>
-                        <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </span>
+                    <!-- Custom Size Input -->
+                    <div class="relative w-full md:w-32 group">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-xs font-bold uppercase tracking-wider">px</span>
+                        <input type="number" id="sizeInput" 
+                            class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-9 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-500"
+                            placeholder="256" value="256" min="16" max="2048"
+                            onkeydown="if(event.key === 'Enter') fetchAvatar()">
                     </div>
 
                     <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95 whitespace-nowrap">
@@ -139,11 +142,11 @@
                 <div class="w-full md:w-auto flex justify-center">
                     <div class="relative group">
                         <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
-                        <div class="relative bg-slate-900 p-2 rounded-lg border border-slate-700">
-                            <!-- Checkerboard -->
-                            <div class="w-48 h-48 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAHElEQVQYlWNgYGBg+P///38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==')] rounded overflow-hidden relative">
+                        <div class="relative bg-slate-800 p-2 rounded-lg border border-slate-700">
+                            <!-- Clean Dark Background (No Checkerboard) -->
+                            <div class="w-48 h-48 bg-slate-800 rounded overflow-hidden relative flex items-center justify-center">
                                 <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
-                                    class="w-full h-full object-contain pixelated z-10 relative" alt="Avatar Preview">
+                                    class="max-w-full max-h-full object-contain pixelated z-10 relative" alt="Avatar Preview">
                                 
                                 <!-- Loading Overlay -->
                                 <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 hidden z-20">
@@ -245,7 +248,8 @@
             const input = document.getElementById('usernameInput');
             const sizeInput = document.getElementById('sizeInput');
             const username = input.value.trim();
-            const size = sizeInput.value;
+            // Default size 256 if empty
+            const size = sizeInput.value.trim() || '256';
 
             if (!username) return;
 
@@ -265,10 +269,11 @@
                 apiUrl = `${baseUrl}/api/roblox/avatar?user=${encodeURIComponent(username)}&size=${size}`;
             }
 
-            // CACHE BUSTING (Only for preview)
+            // CACHE BUSTING (Only for preview image, NOT for the text link)
             const cacheBuster = `&t=${Date.now()}`;
             const displayUrl = apiUrl + cacheBuster;
 
+            // Set the inputs to the CLEAN URL
             document.getElementById('apiLinkInput').value = apiUrl;
             
             const tempImg = new Image();
@@ -280,10 +285,10 @@
                 document.getElementById('imgLoader').classList.add('hidden');
                 
                 const openBtn = document.getElementById('openLinkBtn');
-                openBtn.href = apiUrl;
+                openBtn.href = apiUrl; // Clean URL
                 
                 const dlBtn = document.getElementById('downloadLinkBtn');
-                dlBtn.href = apiUrl;
+                dlBtn.href = apiUrl; // Clean URL
                 dlBtn.download = `${username}_avatar.png`;
                 
                 disableActions(false);
