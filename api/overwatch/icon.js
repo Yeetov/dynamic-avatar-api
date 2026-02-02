@@ -3,7 +3,8 @@ export default async function handler(request, response) {
 
     if (!user) return response.status(400).json({ error: 'Missing BattleTag' });
 
-    // 1. Disable Caching (Freshness)
+    // 1. CRITICAL: Disable Caching (Freshness)
+    // We use no-store to ensure the browser/CDN never holds onto a 404 or old image
     response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     response.setHeader('Pragma', 'no-cache');
     response.setHeader('Expires', '0');
@@ -14,7 +15,7 @@ export default async function handler(request, response) {
         // Prepare ID: "Name#1234" -> "Name-1234"
         const formattedId = user.replace(/#/g, '-');
 
-        // STRATEGY 1: Direct Lookup (Fastest/Most Accurate)
+        // STRATEGY 1: Direct Lookup (Fastest)
         // We try to find the player exactly as typed
         try {
             const directUrl = `https://overfast-api.tekrop.fr/players/${formattedId}/summary`;
@@ -24,7 +25,6 @@ export default async function handler(request, response) {
                 const data = await directRes.json();
                 if (data.avatar) {
                     avatarUrl = data.avatar;
-                    // console.log("Found via Direct Lookup");
                 }
             }
         } catch (e) {
@@ -32,7 +32,7 @@ export default async function handler(request, response) {
         }
 
         // STRATEGY 2: Search Fallback (If Direct Failed)
-        // This handles cases where case-sensitivity is wrong OR if the user entered "Name#1234" but the API expects something else
+        // This handles case-sensitivity issues (e.g. user typed "aarontendo" but API needs "Aarontendo")
         if (!avatarUrl) {
             try {
                 // Extract just the name for searching: "Name-1234" -> "Name"
@@ -50,7 +50,7 @@ export default async function handler(request, response) {
                         let match = null;
                         
                         if (discriminator) {
-                            // Try to find exact match
+                            // Try to find exact match on discriminator
                             match = results.results.find(p => p.player_id.endsWith(discriminator));
                         }
                         
@@ -64,7 +64,6 @@ export default async function handler(request, response) {
                             if (matchRes.ok) {
                                 const matchData = await matchRes.json();
                                 avatarUrl = matchData.avatar;
-                                // console.log(`Found via Search: ${match.player_id}`);
                             }
                         }
                     }
@@ -75,7 +74,8 @@ export default async function handler(request, response) {
         }
 
         if (!avatarUrl) {
-            return response.status(404).json({ error: 'Player not found' });
+            // New error message to confirm you are running the new code
+            return response.status(404).json({ error: 'Player not found (Checked Direct & Search)' });
         }
 
         // Proxy the image
