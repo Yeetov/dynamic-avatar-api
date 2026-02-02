@@ -7,138 +7,223 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #e5e7eb; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
         
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #e2e8f0;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 70%);
+            min-height: 100vh;
+        }
+
         /* Pixelated for Minecraft, Smooth for OW */
         .pixelated { 
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
         .smooth { image-rendering: auto; }
         
-        .game-btn.active { background-color: #2563eb; color: white; border-color: #3b82f6; }
-        .game-btn { background-color: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+        /* Glassmorphism Card */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .game-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #3b82f6;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .game-btn.active::after { transform: scaleX(1); }
+        .game-btn.active { background-color: rgba(59, 130, 246, 0.1); color: white; }
         
         .loader {
-            border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6;
-            width: 20px; height: 20px; animation: spin 1s linear infinite;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Code Block Styling */
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            background: #020617;
+            border: 1px solid #1e293b;
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-12 px-4">
+<body class="flex flex-col items-center justify-center py-12 px-4">
 
-    <div class="text-center mb-8 space-y-2">
-        <h1 class="text-4xl font-bold text-white tracking-tight">
-            <span class="text-blue-500"><i class="fas fa-gamepad mr-2"></i>Avatar</span>API
+    <!-- Header -->
+    <div class="text-center mb-10 space-y-3">
+        <div class="inline-flex items-center justify-center p-3 bg-blue-500/10 rounded-2xl mb-2">
+            <i class="fas fa-cube text-blue-500 text-3xl"></i>
+        </div>
+        <h1 class="text-5xl font-extrabold text-white tracking-tight">
+            Avatar<span class="text-blue-500">API</span>
         </h1>
-        <p class="text-gray-400">Dynamic Avatars for Every Game</p>
+        <p class="text-slate-400 font-medium">Developer-ready avatars for Minecraft & Overwatch</p>
     </div>
 
-    <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl p-6 md:p-8 border border-gray-700">
+    <!-- Main Card -->
+    <div class="glass-panel rounded-2xl w-full max-w-3xl overflow-hidden transition-all duration-500">
         
-        <!-- Game Selector -->
-        <div class="flex justify-center gap-4 mb-8">
-            <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
+        <!-- Game Selector Tabs -->
+        <div class="flex border-b border-white/5 bg-slate-900/50">
+            <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 hover:bg-slate-800/50">
                 <i class="fas fa-cube"></i> Minecraft
             </button>
-            <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
-                <i class="fas fa-shield-alt"></i> Overwatch 2
+            <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 py-4 font-semibold text-sm tracking-wide uppercase flex justify-center items-center gap-2 text-slate-400 hover:bg-slate-800/50">
+                <i class="fab fa-battle-net"></i> Overwatch 2
             </button>
         </div>
 
-        <!-- Input Area -->
-        <div class="flex flex-col md:flex-row gap-4 mb-8">
-            <div class="relative flex-grow">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-user"></i></span>
-                <input type="text" id="usernameInput" placeholder="Minecraft Username (e.g. Notch)" 
-                    class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg py-3 pl-10 pr-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    onkeydown="if(event.key === 'Enter') fetchAvatar()">
-            </div>
-            <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                <span>Fetch</span>
-            </button>
-        </div>
-
-        <div id="statusMessage" class="hidden mb-6 text-sm text-center py-2 px-4 rounded bg-gray-900 border border-gray-700"></div>
-
-        <!-- Render Area -->
-        <div class="flex flex-col items-center justify-center min-h-[300px] bg-gray-900/50 rounded-lg border border-gray-700 p-8">
+        <div class="p-6 md:p-8">
             
-            <div class="relative group">
-                <!-- Image Container -->
-                <img id="avatarPreview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
-                    class="w-32 h-32 md:w-48 md:h-48 shadow-2xl rounded-lg object-contain pixelated bg-gray-800 transition-transform duration-300">
-                
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity rounded-lg">
-                     <a id="downloadLink" href="#" download="avatar.png" class="text-white hover:text-blue-400"><i class="fas fa-download fa-2x"></i></a>
+            <!-- Input Area -->
+            <div class="flex flex-col md:flex-row gap-3 mb-8">
+                <div class="relative flex-grow group">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="usernameInput" 
+                        class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-slate-600"
+                        placeholder="Minecraft Username (e.g. Notch)" 
+                        autocomplete="off"
+                        onkeydown="if(event.key === 'Enter') fetchAvatar()">
                 </div>
+                <button onclick="fetchAvatar()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+                    <span>Generate</span>
+                    <i class="fas fa-arrow-right text-sm"></i>
+                </button>
             </div>
 
-            <!-- Dynamic Link Generator -->
-            <div class="w-full max-w-md mt-8 space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="text-[10px] text-gray-500 uppercase font-semibold">Dynamic API Link</label>
-                    <span id="apiStatus" class="text-[10px] bg-gray-700 px-1 rounded text-gray-400">Client Mode</span>
+            <!-- Result Area -->
+            <div class="flex flex-col md:flex-row gap-8 items-start">
+                
+                <!-- Image Preview -->
+                <div class="w-full md:w-auto flex justify-center">
+                    <div class="relative group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                        <div class="relative bg-slate-900 p-2 rounded-lg border border-slate-700">
+                            <!-- Background checkerboard pattern for transparency -->
+                            <div class="w-48 h-48 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAHElEQVQYlWNgYGBg+P///38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==')] rounded overflow-hidden relative">
+                                <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
+                                    class="w-full h-full object-contain pixelated z-10 relative" alt="Avatar Preview">
+                                
+                                <!-- Loading Overlay -->
+                                <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 hidden z-20">
+                                    <div class="loader"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <input type="text" id="apiLinkInput" readonly 
-                        class="w-full bg-gray-950 border border-gray-700 text-gray-400 text-xs rounded px-2 py-3 focus:outline-none focus:border-blue-500 font-mono"
-                        placeholder="Generate an avatar to get link...">
-                    <button onclick="copyLink()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-4 rounded transition-colors" title="Copy">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button onclick="openLink()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-4 rounded transition-colors" title="Open">
-                        <i class="fas fa-external-link-alt"></i>
-                    </button>
+
+                <!-- API Details -->
+                <div class="flex-grow w-full space-y-4">
+                    
+                    <!-- Status Message -->
+                    <div id="statusContainer" class="hidden rounded-lg p-3 bg-red-500/10 border border-red-500/20 text-red-200 text-sm flex items-center gap-2">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <span id="statusText">Error message here</span>
+                    </div>
+
+                    <!-- URL Box -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center px-1">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Direct API Link</label>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">GET</span>
+                        </div>
+                        
+                        <div class="relative group">
+                            <input type="text" id="apiLinkInput" readonly 
+                                class="code-block w-full text-slate-300 text-sm rounded-lg p-3 pr-12 focus:outline-none"
+                                value="Waiting for input...">
+                            
+                            <button onclick="copyLink()" class="absolute right-2 top-2 p-1.5 text-slate-500 hover:text-white transition-colors" title="Copy to clipboard">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Helper Text -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <a id="openLinkBtn" href="#" target="_blank" class="text-center p-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs transition-colors pointer-events-none opacity-50">
+                            <i class="fas fa-external-link-alt mr-1"></i> Open in Browser
+                        </a>
+                        <a id="downloadLinkBtn" href="#" download class="text-center p-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-400 text-xs transition-colors pointer-events-none opacity-50">
+                            <i class="fas fa-download mr-1"></i> Download PNG
+                        </a>
+                    </div>
+
                 </div>
-                <p class="text-[10px] text-gray-500 text-center">Use this link in your own websites <code>&lt;img src="..."&gt;</code></p>
             </div>
 
         </div>
+    </div>
+
+    <div class="mt-8 text-slate-600 text-sm">
+        <p>Use <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-400">/api/minecraft/face</code> or <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-400">/api/overwatch/icon</code></p>
     </div>
 
     <script>
         let currentGame = 'minecraft';
+        const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : window.location.origin; // Adapts to Vercel automatically
         const hasApi = window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file');
-
-        if(hasApi) {
-            document.getElementById('apiStatus').innerText = "Live API";
-            document.getElementById('apiStatus').classList.replace('text-gray-400', 'text-green-400');
-        } else {
-            document.getElementById('apiStatus').innerText = "Deploy to Vercel";
-        }
 
         function switchGame(game) {
             currentGame = game;
             
-            // UI Toggle
-            document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${game}`).classList.add('active');
+            // UI Toggles
+            document.querySelectorAll('.game-btn').forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('text-slate-400');
+            });
+            
+            const activeBtn = document.getElementById(`btn-${game}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-slate-400');
 
-            // Input Placeholder
+            // Input Context
             const input = document.getElementById('usernameInput');
             const img = document.getElementById('avatarPreview');
 
             if (game === 'minecraft') {
                 input.placeholder = "Minecraft Username (e.g. Notch)";
-                img.classList.remove('smooth', 'rounded-full');
-                img.classList.add('pixelated', 'rounded-lg');
+                img.classList.remove('smooth');
+                img.classList.add('pixelated');
             } else {
-                input.placeholder = "BattleTag (Name#1234)";
-                img.classList.remove('pixelated', 'rounded-full');
-                // FIX: Changed from rounded-full to rounded-lg to stop circle crop
-                img.classList.add('smooth', 'rounded-lg'); 
+                input.placeholder = "BattleTag (e.g. Name#1234)";
+                img.classList.remove('pixelated');
+                img.classList.add('smooth');
             }
             
-            // Clear previous
+            // Reset
             input.value = '';
-            document.getElementById('apiLinkInput').value = '';
-            img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-            document.getElementById('statusMessage').classList.add('hidden');
+            document.getElementById('apiLinkInput').value = 'Waiting for input...';
+            document.getElementById('statusContainer').classList.add('hidden');
+            img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            disableActions(true);
         }
 
         async function fetchAvatar() {
@@ -146,81 +231,85 @@
             const username = input.value.trim();
             if (!username) return;
 
-            showStatus('Generating dynamic link...', 'text-blue-300', true);
+            // UI Loading State
+            document.getElementById('statusContainer').classList.add('hidden');
+            document.getElementById('imgLoader').classList.remove('hidden');
+            const img = document.getElementById('avatarPreview');
+            img.style.opacity = '0.3';
 
-            // Construct API URL
-            const baseUrl = hasApi ? window.location.origin : 'https://your-vercel-app.vercel.app'; 
             let apiUrl = '';
-
             if (currentGame === 'minecraft') {
-                apiUrl = `${baseUrl}/api/minecraft/face?user=${username}&size=256`;
+                apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=256`;
             } else {
                 const tag = username.replace('#', '-');
-                apiUrl = `${baseUrl}/api/overwatch/icon?user=${tag}`;
+                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(tag)}`;
             }
 
+            // Set the inputs immediately so user sees the link
             document.getElementById('apiLinkInput').value = apiUrl;
             
-            // Debug Phase: Fetch the URL to check for API errors (500/404)
-            if (hasApi) {
-                try {
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) {
-                        try {
-                            const errData = await response.json();
-                            throw new Error(errData.error || response.statusText);
-                        } catch (jsonErr) {
-                            throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                        }
-                    }
-                } catch (e) {
-                    showStatus(e.message, 'text-red-400');
-                    return; 
-                }
-            }
+            // Preload image to check for errors
+            const tempImg = new Image();
+            tempImg.src = apiUrl;
 
-            // If fetch check passed, display the image
-            const img = document.getElementById('avatarPreview');
-            img.style.opacity = '0.5';
-            
-            const testImg = new Image();
-            testImg.src = apiUrl;
-            
-            testImg.onload = () => {
+            tempImg.onload = function() {
                 img.src = apiUrl;
                 img.style.opacity = '1';
-                document.getElementById('downloadLink').href = apiUrl;
-                showStatus('Avatar loaded successfully!', 'text-green-400');
+                document.getElementById('imgLoader').classList.add('hidden');
+                
+                // Enable buttons
+                const openBtn = document.getElementById('openLinkBtn');
+                openBtn.href = apiUrl;
+                
+                const dlBtn = document.getElementById('downloadLinkBtn');
+                dlBtn.href = apiUrl;
+                dlBtn.download = `${username}_avatar.png`;
+                
+                disableActions(false);
             };
-            
-            testImg.onerror = () => {
+
+            tempImg.onerror = function() {
                 img.style.opacity = '1';
-                if (!hasApi) {
-                    showStatus('API not found. Deploy to Vercel to fix.', 'text-yellow-400');
-                } else {
-                    showStatus('Failed to load image. Is the user valid?', 'text-red-400');
-                }
+                document.getElementById('imgLoader').classList.add('hidden');
+                
+                const msg = !hasApi 
+                    ? "API endpoints not found. Please deploy to Vercel."
+                    : (currentGame === 'overwatch' ? "Player not found or Private Profile." : "User not found.");
+
+                showError(msg);
+                disableActions(true);
             };
         }
 
-        function showStatus(msg, colorClass, isLoading) {
-            const el = document.getElementById('statusMessage');
+        function showError(msg) {
+            const el = document.getElementById('statusContainer');
+            document.getElementById('statusText').innerText = msg;
             el.classList.remove('hidden');
-            el.innerHTML = isLoading 
-                ? `<div class="flex items-center justify-center gap-2"><div class="loader"></div> <span>${msg}</span></div>` 
-                : `<span class="${colorClass}">${msg}</span>`;
+        }
+
+        function disableActions(disable) {
+            const els = [document.getElementById('openLinkBtn'), document.getElementById('downloadLinkBtn')];
+            els.forEach(el => {
+                if(disable) {
+                    el.classList.add('pointer-events-none', 'opacity-50');
+                } else {
+                    el.classList.remove('pointer-events-none', 'opacity-50');
+                }
+            });
         }
 
         function copyLink() {
             const copyText = document.getElementById("apiLinkInput");
+            if (copyText.value === 'Waiting for input...') return;
+            
             copyText.select();
             document.execCommand("copy");
-            showStatus("Link copied to clipboard!", "text-green-400");
-        }
-
-        function openLink() {
-            const url = document.getElementById("apiLinkInput").value;
-            if(url) window.open(url, '_blank');
+            
+            // Visual feedback
+            const btn = copyText.nextElementSibling;
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+            setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
         }
     </script>
 </body>
