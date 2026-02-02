@@ -233,20 +233,19 @@
             if (currentGame === 'minecraft') {
                 apiUrl = `${baseUrl}/api/minecraft/face?user=${encodeURIComponent(username)}&size=256`;
             } else {
-                // Ensure the # is properly handled if the user typed it
-                // We DON'T replace here manually anymore, we let encodeURIComponent handle it
-                // and let the backend decide whether to use direct or search
-                // BUT for cleaner URLs, replacing # with - is standard for OW APIs
-                const tag = username.replace('#', '-'); 
-                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(tag)}`;
+                // Send raw username (no replacing # with - here) so the clean link works properly
+                // The backend handles the # vs - difference
+                apiUrl = `${baseUrl}/api/overwatch/icon?user=${encodeURIComponent(username)}`;
             }
 
-            // CACHE BUSTING
+            // CACHE BUSTING (Only for the preview image to force update)
             const cacheBuster = `&t=${Date.now()}`;
             const displayUrl = apiUrl + cacheBuster;
 
+            // Set the inputs to the CLEAN URL (without timestamp)
             document.getElementById('apiLinkInput').value = apiUrl;
             
+            // Check availability using the display URL (forces fresh check)
             const tempImg = new Image();
             tempImg.src = displayUrl;
 
@@ -255,11 +254,12 @@
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
                 
+                // Set buttons to use the CLEAN URL
                 const openBtn = document.getElementById('openLinkBtn');
-                openBtn.href = displayUrl;
+                openBtn.href = apiUrl; 
                 
                 const dlBtn = document.getElementById('downloadLinkBtn');
-                dlBtn.href = displayUrl;
+                dlBtn.href = apiUrl;
                 dlBtn.download = `${username}_avatar.png`;
                 
                 disableActions(false);
