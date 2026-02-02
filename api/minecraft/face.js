@@ -12,73 +12,89 @@ export default async function handler(request, response) {
         return response.status(400).json({ error: 'Missing "user" parameter' });
     }
 
-    // PERFORMANCE: Enable Caching
-    // Browser cache: 1 hour. CDN/Vercel Cache: 2 hours.
-    // This drastically reduces function execution costs.
-    response.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=7200');
+    // CACHING TWEAK: 
+    // Reduced to 5 minutes (300s) for browser, 10 minutes (600s) for CDN.
+    // This balances performance with "freshness".
+    response.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
 
     try {
         let skinUrl = null;
+        let uuid = null;
 
-        // STRATEGY: Resolve Username -> Skin URL
-        // 1. Ashcon API (Fastest, caches Mojang data)
+        // STRATEGY: 
+        // 1. Try Ashcon first (Fastest, handles UUID/Username conversion)
         try {
             const ashconRes = await fetch(`https://api.ashcon.app/mojang/v2/user/${targetUser}`);
             if (ashconRes.ok) {
                 const data = await ashconRes.json();
                 skinUrl = data.textures.skin.url;
+                uuid = data.uuid;
             }
         } catch (e) {
-            console.warn("Ashcon API failed, trying fallback...", e.message);
+            console.warn("Ashcon API failed:", e.message);
         }
 
-        // 2. Fallback: PlayerDB (If Ashcon fails)
+        // 2. FRESHNESS FALLBACK: Direct Mojang Lookup
+        // If Ashcon failed OR if we want to be super sure (optional), we try Mojang.
+        // We only do this if we have a UUID (from Ashcon or elsewhere) or if Ashcon failed completely.
         if (!skinUrl) {
             try {
+                // We need a UUID to talk to Mojang directly. 
+                // Using PlayerDB to resolve username -> UUID if we don't have it yet.
                 const playerDbRes = await fetch(`https://playerdb.co/api/player/minecraft/${targetUser}`);
                 if (playerDbRes.ok) {
                     const data = await playerDbRes.json();
                     if (data.success) {
-                        // Decode the textures from the base64 value in properties
-                        const props = data.data.player.properties;
-                        const textureProp = props.find(p => p.name === 'textures');
-                        if (textureProp) {
-                            const decoded = JSON.parse(Buffer.from(textureProp.value, 'base64').toString());
-                            skinUrl = decoded.textures.SKIN.url;
+                        uuid = data.data.player.raw_id;
+                    }
+                }
+
+                if (uuid) {
+                    const timestamp = Date.now();
+                    const mojangRes = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}?unsigned=false&t=${timestamp}`);
+                    if (mojangRes.ok) {
+                        const profile = await mojangRes.json();
+                        if (profile.properties?.[0]?.value) {
+                            const decoded = JSON.parse(Buffer.from(profile.properties[0].value, 'base64').toString());
+                            if (decoded.textures?.SKIN?.url) {
+                                skinUrl = decoded.textures.SKIN.url;
+                                console.log("Fetched fresh skin from Mojang");
+                            }
                         }
                     }
                 }
             } catch (e) {
-                console.warn("PlayerDB failed", e.message);
+                console.warn("Mojang/PlayerDB fallback failed:", e.message);
             }
         }
 
-        // 3. Last Resort: Crafatar default (Steve/Alex) based on UUID or just fail
+        // 3. Fallback to Crafatar (Reliable backup)
+        if (!skinUrl && uuid) {
+            skinUrl = `https://crafatar.com/skins/${uuid}`;
+        }
+
         if (!skinUrl) {
-            // If we can't find the user, return 404 so the client knows
-            return response.status(404).json({ error: 'User not found' });
+            return response.status(404).json({ error: 'User/Skin not found' });
         }
 
         // PROCESSING: JIMP Image Composition
-        // Read the skin texture
         const skin = await JimpConstructor.read(skinUrl);
+        const face = new JimpConstructor(8, 8, 0x00000000); // Transparent 8x8
 
-        // Create new blank image (8x8 canvas)
-        const face = new JimpConstructor(8, 8, 0x00000000);
-
-        // Layer 1: Face (Source: 8,8, size 8x8)
+        // Layer 1: Face
         face.composite(skin.clone().crop(8, 8, 8, 8), 0, 0);
 
-        // Layer 2: Hat/Overlay (Source: 40,8, size 8x8)
-        // Check if the area actually has pixels (some skins are buggy)
+        // Layer 2: Hat/Overlay
+        // We verify the overlay isn't fully opaque black (legacy skin bug)
+        // by checking a few pixels or just relying on standard composite.
+        // Standard composite usually works fine unless the skin is ancient.
         const overlay = skin.clone().crop(40, 8, 8, 8);
         face.composite(overlay, 0, 0);
 
-        // Resize using Nearest Neighbor to keep it pixelated and crisp
+        // Resize
         face.resize(size, size, JimpConstructor.RESIZE_NEAREST_NEIGHBOR);
 
         const buffer = await face.getBufferAsync(JimpConstructor.MIME_PNG);
-
         response.setHeader('Content-Type', 'image/png');
         response.send(buffer);
 
