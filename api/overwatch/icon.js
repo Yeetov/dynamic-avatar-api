@@ -1,51 +1,86 @@
 export default async function handler(request, response) {
-    // Usage: /api/overwatch/icon?user=Name-1234&platform=pc&region=us
-    const { user, platform = 'pc', region = 'us' } = request.query || {};
+    const { user } = request.query || {};
 
-    if (!user) return response.status(400).json({ error: 'Missing BattleTag (e.g. Name-1234)' });
+    if (!user) return response.status(400).json({ error: 'Missing BattleTag' });
 
-    // Format tag: Ensure # is replaced with - for the URL
-    // e.g. "Cats#11481" -> "Cats-11481"
-    let tag = user.replace('#', '-');
-
-    // PERFORMANCE: Enable Caching
-    // Cache for 30 mins (Profiles change more often than skins, but not every second)
-    response.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=3600');
+    // 1. Disable Caching (Freshness)
+    response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    response.setHeader('Pragma', 'no-cache');
+    response.setHeader('Expires', '0');
 
     try {
-        // Using ow-api.com profile endpoint
-        const apiUrl = `https://ow-api.com/v1/stats/${platform}/${region}/${tag}/profile`;
+        let avatarUrl = null;
         
-        const apiRes = await fetch(apiUrl);
-        
-        if (!apiRes.ok) {
-            if (apiRes.status === 404) {
-                return response.status(404).json({ error: 'Player not found. Check BattleTag.' });
+        // Prepare ID: "Name#1234" -> "Name-1234"
+        const formattedId = user.replace(/#/g, '-');
+
+        // STRATEGY 1: Direct Lookup (Fastest/Most Accurate)
+        // We try to find the player exactly as typed
+        try {
+            const directUrl = `https://overfast-api.tekrop.fr/players/${formattedId}/summary`;
+            const directRes = await fetch(directUrl);
+            
+            if (directRes.ok) {
+                const data = await directRes.json();
+                if (data.avatar) {
+                    avatarUrl = data.avatar;
+                    // console.log("Found via Direct Lookup");
+                }
             }
-            throw new Error(`External API Error: ${apiRes.status}`);
-        }
-        
-        const data = await apiRes.json();
-        
-        // Extract Icon URL
-        // API often returns 200 with "private" message
-        if (data.private && !data.icon) {
-             return response.status(403).json({ error: 'Profile is private. Icon cannot be retrieved.' });
+        } catch (e) {
+            console.warn("Direct lookup failed:", e.message);
         }
 
-        if (!data.icon) {
-            // Fallback for not found inside a 200 response
-             if (data.msg === 'profile not found') {
-                return response.status(404).json({ error: 'Player not found' });
+        // STRATEGY 2: Search Fallback (If Direct Failed)
+        // This handles cases where case-sensitivity is wrong OR if the user entered "Name#1234" but the API expects something else
+        if (!avatarUrl) {
+            try {
+                // Extract just the name for searching: "Name-1234" -> "Name"
+                const cleanName = user.split('#')[0].split('-')[0];
+                const searchUrl = `https://overfast-api.tekrop.fr/players?name=${cleanName}`;
+                
+                const searchRes = await fetch(searchUrl);
+                if (searchRes.ok) {
+                    const results = await searchRes.json();
+                    if (results.results && results.results.length > 0) {
+                        // If we have the discriminator (#1234), try to match it
+                        const discriminator = user.includes('#') ? user.split('#')[1] : 
+                                            (user.includes('-') ? user.split('-')[1] : null);
+                        
+                        let match = null;
+                        
+                        if (discriminator) {
+                            // Try to find exact match
+                            match = results.results.find(p => p.player_id.endsWith(discriminator));
+                        }
+                        
+                        // If no exact match (or no discriminator provided), take the first one
+                        if (!match) match = results.results[0];
+                        
+                        // Get summary for the found match to get the avatar
+                        if (match) {
+                            const matchUrl = `https://overfast-api.tekrop.fr/players/${match.player_id}/summary`;
+                            const matchRes = await fetch(matchUrl);
+                            if (matchRes.ok) {
+                                const matchData = await matchRes.json();
+                                avatarUrl = matchData.avatar;
+                                // console.log(`Found via Search: ${match.player_id}`);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Search lookup failed:", e.message);
             }
-             throw new Error('No icon found in profile data.');
         }
 
-        const iconUrl = data.icon; 
+        if (!avatarUrl) {
+            return response.status(404).json({ error: 'Player not found' });
+        }
 
-        // Proxy the image to handle CORS
-        const imageRes = await fetch(iconUrl);
-        if (!imageRes.ok) throw new Error('Failed to load icon image from Blizzard CDN');
+        // Proxy the image
+        const imageRes = await fetch(avatarUrl);
+        if (!imageRes.ok) throw new Error('Failed to load upstream image');
         
         const imageBuffer = await imageRes.arrayBuffer();
 
@@ -54,9 +89,6 @@ export default async function handler(request, response) {
 
     } catch (error) {
         console.error("OW API Error:", error);
-        return response.status(500).json({ 
-            error: 'Failed to fetch Overwatch icon', 
-            details: error.message 
-        });
+        return response.status(500).json({ error: 'Failed to fetch icon', details: error.message });
     }
 }
