@@ -12,35 +12,35 @@ export default async function handler(request, response) {
         return response.status(400).json({ error: 'Missing "user" parameter' });
     }
 
-    // CACHING TWEAK: 
-    // Reduced to 5 minutes (300s) for browser, 10 minutes (600s) for CDN.
-    // This balances performance with "freshness".
-    response.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
+    // FORCE FRESHNESS: Disable all caching
+    // This ensures that if a user updates their skin, they see it immediately.
+    response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    response.setHeader('Pragma', 'no-cache');
+    response.setHeader('Expires', '0');
 
     try {
         let skinUrl = null;
         let uuid = null;
+        let fallbackSkinUrl = null;
 
-        // STRATEGY: 
-        // 1. Try Ashcon first (Fastest, handles UUID/Username conversion)
+        // STEP 1: Resolve Username -> UUID
+        // We use fast APIs (Ashcon/PlayerDB) just to get the UUID.
+        
+        // Option A: Ashcon
         try {
             const ashconRes = await fetch(`https://api.ashcon.app/mojang/v2/user/${targetUser}`);
             if (ashconRes.ok) {
                 const data = await ashconRes.json();
-                skinUrl = data.textures.skin.url;
-                uuid = data.uuid;
+                uuid = data.uuid.replace(/-/g, ''); // Ensure raw UUID
+                fallbackSkinUrl = data.textures.skin.url; // Save as backup
             }
         } catch (e) {
-            console.warn("Ashcon API failed:", e.message);
+            console.warn("Ashcon lookup failed:", e.message);
         }
 
-        // 2. FRESHNESS FALLBACK: Direct Mojang Lookup
-        // If Ashcon failed OR if we want to be super sure (optional), we try Mojang.
-        // We only do this if we have a UUID (from Ashcon or elsewhere) or if Ashcon failed completely.
-        if (!skinUrl) {
+        // Option B: PlayerDB (if Ashcon failed to get UUID)
+        if (!uuid) {
             try {
-                // We need a UUID to talk to Mojang directly. 
-                // Using PlayerDB to resolve username -> UUID if we don't have it yet.
                 const playerDbRes = await fetch(`https://playerdb.co/api/player/minecraft/${targetUser}`);
                 if (playerDbRes.ok) {
                     const data = await playerDbRes.json();
@@ -48,33 +48,41 @@ export default async function handler(request, response) {
                         uuid = data.data.player.raw_id;
                     }
                 }
-
-                if (uuid) {
-                    const timestamp = Date.now();
-                    const mojangRes = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}?unsigned=false&t=${timestamp}`);
-                    if (mojangRes.ok) {
-                        const profile = await mojangRes.json();
-                        if (profile.properties?.[0]?.value) {
-                            const decoded = JSON.parse(Buffer.from(profile.properties[0].value, 'base64').toString());
-                            if (decoded.textures?.SKIN?.url) {
-                                skinUrl = decoded.textures.SKIN.url;
-                                console.log("Fetched fresh skin from Mojang");
-                            }
-                        }
-                    }
-                }
             } catch (e) {
-                console.warn("Mojang/PlayerDB fallback failed:", e.message);
+                console.warn("PlayerDB lookup failed:", e.message);
             }
         }
 
-        // 3. Fallback to Crafatar (Reliable backup)
-        if (!skinUrl && uuid) {
-            skinUrl = `https://crafatar.com/skins/${uuid}`;
+        if (!uuid) {
+             return response.status(404).json({ error: 'User not found' });
         }
 
+        // STEP 2: Get FRESH Skin from Mojang (The Source of Truth)
+        // We always try this first to guarantee the latest skin.
+        try {
+            const timestamp = Date.now();
+            const mojangRes = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}?unsigned=false&t=${timestamp}`);
+            
+            if (mojangRes.ok) {
+                const profile = await mojangRes.json();
+                if (profile.properties?.[0]?.value) {
+                    const decoded = JSON.parse(Buffer.from(profile.properties[0].value, 'base64').toString());
+                    if (decoded.textures?.SKIN?.url) {
+                        skinUrl = decoded.textures.SKIN.url;
+                        // console.log("Fetched live skin from Mojang");
+                    }
+                }
+            } else {
+                console.warn(`Mojang Direct API error: ${mojangRes.status} (Likely rate limited)`);
+            }
+        } catch (e) {
+            console.warn("Mojang Direct connection failed:", e.message);
+        }
+
+        // STEP 3: Fallback (If Mojang rate limits or fails)
+        // Use the cached skin from Ashcon or default to Crafatar
         if (!skinUrl) {
-            return response.status(404).json({ error: 'User/Skin not found' });
+            skinUrl = fallbackSkinUrl || `https://crafatar.com/skins/${uuid}`;
         }
 
         // PROCESSING: JIMP Image Composition
@@ -85,9 +93,6 @@ export default async function handler(request, response) {
         face.composite(skin.clone().crop(8, 8, 8, 8), 0, 0);
 
         // Layer 2: Hat/Overlay
-        // We verify the overlay isn't fully opaque black (legacy skin bug)
-        // by checking a few pixels or just relying on standard composite.
-        // Standard composite usually works fine unless the skin is ancient.
         const overlay = skin.clone().crop(40, 8, 8, 8);
         face.composite(overlay, 0, 0);
 
