@@ -4,7 +4,10 @@ const JimpConstructor = Jimp.default || Jimp;
 
 export default async function handler(request, response) {
     const { user, size: sizeParam } = request.query || {};
-    const size = parseInt(sizeParam) || 256;
+    
+    // Overwatch icons are small assets. We cap at 128px to ensure crispness.
+    let requestedSize = parseInt(sizeParam) || 128;
+    const size = Math.min(requestedSize, 128);
 
     if (!user) return response.status(400).json({ error: 'Missing BattleTag' });
 
@@ -17,11 +20,9 @@ export default async function handler(request, response) {
         let avatarUrl = null;
         
         // Strategy A: Clean up input "Name#1234" -> "Name-1234"
-        // This is what Overfast usually expects for IDs
         const idBasedUser = user.replace('#', '-');
 
         // Strategy B: Clean Name Only "Name#1234" -> "Name"
-        // Used for the search fallback
         const nameOnly = user.includes('#') || user.includes('-') 
             ? user.split(/#|-/)[0] 
             : user;
@@ -40,7 +41,6 @@ export default async function handler(request, response) {
         }
 
         // 2. Search Fallback (If Direct failed)
-        // This handles cases where user entered just "Name" or casing was wrong
         if (!avatarUrl) {
             try {
                 const searchUrl = `https://overfast-api.tekrop.fr/players?name=${nameOnly}`;
@@ -49,18 +49,15 @@ export default async function handler(request, response) {
                 if (searchRes.ok) {
                     const results = await searchRes.json();
                     if (results.results && results.results.length > 0) {
-                        // If user provided a discriminator (e.g. 1234), try to find that specific one in results
-                        const discriminator = user.match(/(\d{3,})/)?.[0]; // Grab 3+ digits if present
+                        const discriminator = user.match(/(\d{3,})/)?.[0];
                         
                         let match = null;
                         if (discriminator) {
                              match = results.results.find(p => p.player_id.includes(discriminator));
                         }
                         
-                        // Default to first result if no discriminator match or no discriminator provided
                         if (!match) match = results.results[0];
 
-                        // Get avatar from summary
                         const summaryUrl = `https://overfast-api.tekrop.fr/players/${match.player_id}/summary`;
                         const summaryRes = await fetch(summaryUrl);
                         if (summaryRes.ok) {
