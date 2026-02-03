@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
 
     <title>AvatarAPI | Dynamic Game Assets for the Web</title>
-    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, and Roblox avatars on your website. No uploads required.">
+    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, Roblox, Chess.com, and GitHub avatars on your website.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -51,6 +51,7 @@
 
         .game-btn {
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
         
         .game-btn.active { 
@@ -109,7 +110,7 @@
         
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
             <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            Live API v2.0
+            Live API v2.1
         </div>
 
         <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
@@ -120,9 +121,10 @@
         <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
             Stop manually uploading profile pictures. Use our dynamic API to display your 
             <span class="text-white font-semibold">Minecraft</span>, 
-            <span class="text-white font-semibold">Overwatch</span>, and 
-            <span class="text-white font-semibold">Roblox</span> avatars on your portfolio, apps, or Discord. 
-            Change it in-game, it updates everywhere.
+            <span class="text-white font-semibold">Overwatch</span>, 
+            <span class="text-white font-semibold">Roblox</span>,
+            <span class="text-white font-semibold">Chess.com</span>, and
+            <span class="text-white font-semibold">GitHub</span> avatars.
         </p>
 
         <!-- THE GENERATOR -->
@@ -132,15 +134,21 @@
             <div class="glass-panel rounded-xl overflow-hidden relative">
                 
                 <!-- Toolbar -->
-                <div class="flex flex-wrap border-b border-white/5 bg-slate-900/40">
-                    <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5">
+                <div class="flex overflow-x-auto border-b border-white/5 bg-slate-900/40 no-scrollbar">
+                    <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5">
                         <i class="fas fa-cube"></i> Minecraft
                     </button>
-                    <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                    <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 min-w-[120px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
                         <i class="fab fa-battle-net"></i> Overwatch 2
                     </button>
-                    <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                    <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
                         <i class="fas fa-shapes"></i> Roblox
+                    </button>
+                    <button onclick="switchGame('chess')" id="btn-chess" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                        <i class="fas fa-chess-knight"></i> Chess.com
+                    </button>
+                    <button onclick="switchGame('github')" id="btn-github" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                        <i class="fab fa-github"></i> GitHub
                     </button>
                 </div>
 
@@ -274,7 +282,7 @@
     <footer class="border-t border-slate-800/50 bg-slate-950/50 py-12">
         <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="text-slate-500 text-sm">
-                &copy; 2024 AvatarAPI. Not affiliated with Mojang, Blizzard, or Roblox.
+                &copy; 2024 AvatarAPI. Not affiliated with Mojang, Blizzard, Roblox, or Microsoft.
             </div>
             <div class="flex gap-4">
                 <a href="#" class="text-slate-500 hover:text-white transition-colors"><i class="fab fa-twitter"></i></a>
@@ -320,10 +328,16 @@
                 input.placeholder = "e.g. Roblox";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
+            } else if (game === 'chess') {
+                input.placeholder = "e.g. MagnusCarlsen";
+                img.classList.remove('pixelated');
+                img.classList.add('smooth');
+            } else if (game === 'github') {
+                input.placeholder = "e.g. torvalds";
+                img.classList.remove('pixelated');
+                img.classList.add('smooth');
             }
             
-            // Reset
-            // input.value = ''; // Optional: Keep value to let user switch game easily?
             resetOutput();
         }
 
@@ -333,7 +347,7 @@
                 b.classList.remove('active', 'bg-slate-600', 'text-white');
                 b.classList.add('text-slate-500');
             });
-            event.target.classList.add('active', 'text-white'); // Simple active state logic
+            event.target.classList.add('active', 'text-white');
             updateOutputText();
         }
 
@@ -363,6 +377,8 @@
             if (currentGame === 'minecraft') endpoint = '/api/minecraft/face';
             else if (currentGame === 'overwatch') endpoint = '/api/overwatch/icon';
             else if (currentGame === 'roblox') endpoint = '/api/roblox/avatar';
+            else if (currentGame === 'chess') endpoint = '/api/chess/avatar';
+            else if (currentGame === 'github') endpoint = '/api/github/avatar';
 
             // Construct URL
             const finalUrl = `${baseUrl}${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
@@ -394,14 +410,15 @@
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
                 
-                const msg = !hasApi 
-                    ? "API endpoints not found. Deploy to Vercel."
-                    : (currentGame === 'overwatch' ? "Player not found. Try 'Name-1234'." : "User not found.");
-
+                let msg = "User not found";
+                if (!hasApi) msg = "API endpoints not found. Deploy to Vercel.";
+                else if (currentGame === 'overwatch') msg = "Player not found. Try 'Name-1234' format.";
+                else if (currentGame === 'roblox') msg = "Roblox user not found.";
+                
                 showError(msg);
                 disableActions(true);
-                currentUrl = ''; // Clear valid URL on error
-                document.getElementById('apiLinkInput').value = '// Error: User not found';
+                currentUrl = ''; 
+                document.getElementById('apiLinkInput').value = '// Error: ' + msg;
             };
         }
 
@@ -440,7 +457,6 @@
             copyText.select();
             document.execCommand("copy");
             
-            // Pulse effect on copy button
             const btn = copyText.nextElementSibling.querySelector('button');
             const originalText = btn.innerText;
             btn.innerText = 'Copied!';
@@ -451,10 +467,11 @@
             }, 2000);
         }
         
-        // CSS Utility for active tab
         const style = document.createElement('style');
         style.textContent = `
             .fmt-btn.active { background-color: #334155; color: white; }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `;
         document.head.appendChild(style);
     </script>
