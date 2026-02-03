@@ -32,7 +32,7 @@
             perspective: 2000px;
         }
 
-        /* --- TECTONIC PLATES ANIMATION (CSS Only - No JS Classes) --- */
+        /* --- TECTONIC PLATES ANIMATION --- */
         .tectonic-layer {
             position: fixed;
             top: 0;
@@ -112,11 +112,12 @@
 
         /* --- UI ELEMENTS --- */
         .glass-clean {
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
         }
 
         .code-block {
@@ -125,7 +126,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* --- 3D ROTATING CUBE (Subtle) --- */
+        /* --- 3D ROTATING CUBE --- */
         .cube-scene { width: 40px; height: 40px; perspective: 600px; }
         .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: spin-cube 20s infinite linear; }
         .cube-face {
@@ -153,9 +154,13 @@
         .pixelated { image-rendering: pixelated; }
         .smooth { image-rendering: auto; }
         
-        .game-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 2px solid transparent; opacity: 0.6; }
-        .game-btn:hover { opacity: 1; background: rgba(255,255,255,0.03); }
-        .game-btn.active { opacity: 1; border-color: #3b82f6; background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.05)); color: white; }
+        /* Game Button Clean Style */
+        .game-btn { transition: all 0.2s ease; border-bottom: 2px solid transparent; opacity: 0.6; position: relative; overflow: hidden; }
+        .game-btn:hover { opacity: 1; background: rgba(255,255,255,0.05); }
+        .game-btn.active { opacity: 1; border-color: #3b82f6; background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.1)); color: white; }
+        
+        /* Loading Overlay Fade */
+        .fade-exit { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #020617; }
@@ -352,7 +357,7 @@
                 </div>
                 <div class="relative">
                     <code id="code-html" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
-                        &lt;img src="<span class="text-green-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>" /&gt;
+                        &lt;img src="<span class="text-green-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Grian</span>" /&gt;
                     </code>
                     <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                         <i class="far fa-copy text-xs"></i>
@@ -368,7 +373,7 @@
                 </div>
                 <div class="relative">
                     <code id="code-react" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
-                        &lt;Avatar src={`<span class="text-blue-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>`} /&gt;
+                        &lt;Avatar src={`<span class="text-blue-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Grian</span>`} /&gt;
                     </code>
                     <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                         <i class="far fa-copy text-xs"></i>
@@ -384,7 +389,7 @@
                 </div>
                 <div class="relative">
                     <code id="code-md" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
-                        ![User](<span class="text-purple-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>)
+                        ![User](<span class="text-purple-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Grian</span>)
                     </code>
                     <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
                         <i class="far fa-copy text-xs"></i>
@@ -415,10 +420,46 @@
         let currentUrl = '';
         let currentFormat = 'url';
         
-        // Use production URL for snippets even in dev for copy-paste accuracy
+        // --- STATE MANAGEMENT (SMART AUTOSWITCH) ---
+        // Default structure
+        const defaultState = {
+            minecraft: { user: '', size: '256' },
+            overwatch: { user: '', size: '128' },
+            roblox: { user: '', size: '256' },
+            steam: { user: '', size: '184' },
+            chess: { user: '', size: '256' },
+            github: { user: '', size: '256' }
+        };
+
+        // Load or init
+        let gameData = JSON.parse(localStorage.getItem('avatarApiState')) || defaultState;
+
+        function saveState() {
+            localStorage.setItem('avatarApiState', JSON.stringify(gameData));
+        }
+
+        // --- CORE LOGIC ---
+        const input = document.getElementById('usernameInput');
+        const sizeInput = document.getElementById('sizeInput');
+
+        // Update state on typing
+        input.addEventListener('input', (e) => {
+            gameData[currentGame].user = e.target.value.trim();
+            saveState();
+        });
+
+        sizeInput.addEventListener('input', (e) => {
+            gameData[currentGame].size = e.target.value;
+            saveState();
+        });
+
+        // Use production URL for snippets
         const displayBaseUrl = PRODUCTION_URL;
 
         function switchGame(game) {
+            // 1. Save current (already done via input listener, but double check)
+            
+            // 2. Switch
             currentGame = game;
             
             document.querySelectorAll('.game-btn').forEach(b => {
@@ -430,39 +471,50 @@
             activeBtn.classList.add('active', 'bg-white', 'text-black');
             activeBtn.classList.remove('text-slate-500');
 
-            const input = document.getElementById('usernameInput');
             const img = document.getElementById('avatarPreview');
-            const sizeInput = document.getElementById('sizeInput');
 
+            // 3. Set Context (Placeholders/Limits)
             let maxSize = 2048;
-            let defaultSize = 256;
+            let placeholder = "Username";
 
             if (game === 'minecraft') {
-                input.placeholder = "e.g. Notch";
+                placeholder = "e.g. Grian";
                 img.classList.remove('smooth'); img.classList.add('pixelated');
             } else if (game === 'overwatch') {
-                input.placeholder = "e.g. Name#1234";
+                placeholder = "e.g. Name#1234";
                 img.classList.remove('pixelated'); img.classList.add('smooth');
-                maxSize = 128; defaultSize = 128;
+                maxSize = 128; 
             } else if (game === 'roblox') {
-                input.placeholder = "e.g. Roblox";
+                placeholder = "e.g. Roblox";
                 img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'chess') {
-                input.placeholder = "e.g. MagnusCarlsen";
+                placeholder = "e.g. MagnusCarlsen";
                 img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'github') {
-                input.placeholder = "e.g. torvalds";
+                placeholder = "e.g. torvalds";
                 img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'steam') {
-                input.placeholder = "e.g. gabelogannewell or ID";
+                placeholder = "e.g. gabelogannewell or ID";
                 img.classList.remove('pixelated'); img.classList.add('smooth');
-                maxSize = 184; defaultSize = 184;
+                maxSize = 184;
             }
             
+            input.placeholder = placeholder;
             sizeInput.max = maxSize;
-            sizeInput.value = defaultSize;
 
-            resetOutput();
+            // 4. RESTORE DATA
+            const savedUser = gameData[game].user || '';
+            const savedSize = gameData[game].size || (maxSize < 256 ? maxSize : '256');
+
+            input.value = savedUser;
+            sizeInput.value = savedSize;
+
+            // 5. AUTO-FETCH if data exists
+            if (savedUser) {
+                fetchAvatar();
+            } else {
+                resetOutput();
+            }
         }
 
         function setFormat(fmt) {
@@ -487,8 +539,6 @@
         }
 
         async function fetchAvatar() {
-            const input = document.getElementById('usernameInput');
-            const sizeInput = document.getElementById('sizeInput');
             const username = input.value.trim();
             const size = sizeInput.value.trim() || '256';
 
@@ -551,8 +601,8 @@
         }
 
         function updateIntegrationSnippets(url, username) {
-            const cleanUrl = url || `${displayBaseUrl}/api/minecraft/face?user=Notch`;
-            const safeUser = username || 'Notch';
+            const cleanUrl = url || `${displayBaseUrl}/api/minecraft/face?user=Grian`;
+            const safeUser = username || 'Grian';
 
             document.getElementById('code-html').innerHTML = 
                 `&lt;img src="<span class="text-green-400">${cleanUrl}</span>" /&gt;`;
@@ -564,8 +614,15 @@
                 `![${safeUser}](<span class="text-purple-400">${cleanUrl}</span>)`;
         }
 
-        // Init with default
-        updateIntegrationSnippets(null, null);
+        // Init
+        // Restore Minecraft state on load if it exists
+        if (gameData['minecraft'].user) {
+            input.value = gameData['minecraft'].user;
+            sizeInput.value = gameData['minecraft'].size;
+            fetchAvatar();
+        } else {
+            updateIntegrationSnippets(null, null);
+        }
 
         function updateOutputText() {
             if (!currentUrl) return;
