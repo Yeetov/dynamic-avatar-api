@@ -101,7 +101,6 @@
         <div class="hidden md:flex gap-6 text-sm font-medium text-slate-400">
             <a href="#demo" class="hover:text-white transition-colors">Generator</a>
             <a href="#integration" class="hover:text-white transition-colors">Integration</a>
-            <!-- GitHub link removed as requested -->
         </div>
     </nav>
 
@@ -190,11 +189,15 @@
                                         onkeydown="if(event.key === 'Enter') fetchAvatar()">
                                 </div>
                             </div>
-                            <div class="space-y-2">
+                            <div class="space-y-2 relative group">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Size (px)</label>
                                 <input type="number" id="sizeInput" value="256" min="32" max="2048"
                                     class="w-full bg-slate-900/50 border border-slate-700 focus:border-blue-500 text-white rounded-lg py-3 px-4 outline-none transition-all text-center font-mono"
                                     onkeydown="if(event.key === 'Enter') fetchAvatar()">
+                                <!-- Size Hint Tooltip -->
+                                <div id="sizeHint" class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 transition-opacity whitespace-nowrap pointer-events-none">
+                                    Max: 2048px
+                                </div>
                             </div>
                         </div>
 
@@ -313,7 +316,6 @@
                 &copy; 2025-<span id="currentYear"></span> AvatarAPI. Not affiliated with Mojang, Blizzard, Roblox, Valve, or Microsoft.
             </div>
             <div class="flex gap-4">
-                <!-- Social links removed as requested -->
             </div>
         </div>
     </footer>
@@ -345,6 +347,12 @@
             // Input Context
             const input = document.getElementById('usernameInput');
             const img = document.getElementById('avatarPreview');
+            const sizeInput = document.getElementById('sizeInput');
+            const sizeHint = document.getElementById('sizeHint');
+
+            // Default Values
+            let maxSize = 2048;
+            let defaultSize = 256;
 
             if (game === 'minecraft') {
                 input.placeholder = "e.g. Notch";
@@ -354,6 +362,8 @@
                 input.placeholder = "e.g. Name#1234";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
+                maxSize = 128;
+                defaultSize = 128;
             } else if (game === 'roblox') {
                 input.placeholder = "e.g. Roblox";
                 img.classList.remove('pixelated');
@@ -370,10 +380,24 @@
                 input.placeholder = "e.g. gabelogannewell or ID";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
+                maxSize = 184;
+                defaultSize = 184;
             }
             
+            // Update Size Input Constraints
+            sizeInput.max = maxSize;
+            sizeInput.value = defaultSize;
+            sizeHint.innerText = `Max: ${maxSize}px`;
+
+            // Reset Output
             resetOutput();
         }
+
+        // Show/Hide Size Hint
+        const sizeInput = document.getElementById('sizeInput');
+        const sizeHint = document.getElementById('sizeHint');
+        sizeInput.addEventListener('focus', () => sizeHint.classList.remove('opacity-0'));
+        sizeInput.addEventListener('blur', () => sizeHint.classList.add('opacity-0'));
 
         function setFormat(fmt) {
             currentFormat = fmt;
