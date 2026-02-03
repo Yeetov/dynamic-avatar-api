@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
 
     <title>AvatarAPI | Dynamic Game Assets for the Web</title>
-    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, Roblox, Chess.com, and GitHub avatars on your website.">
+    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, Roblox, Chess.com, GitHub, and Steam avatars on your website.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -101,7 +101,7 @@
         <div class="hidden md:flex gap-6 text-sm font-medium text-slate-400">
             <a href="#demo" class="hover:text-white transition-colors">Generator</a>
             <a href="#integration" class="hover:text-white transition-colors">Integration</a>
-            <a href="https://github.com" target="_blank" class="hover:text-white transition-colors"><i class="fab fa-github"></i> GitHub</a>
+            <!-- GitHub link removed as requested -->
         </div>
     </nav>
 
@@ -110,7 +110,7 @@
         
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
             <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            Live API v2.1
+            Live API v2.2
         </div>
 
         <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
@@ -123,8 +123,9 @@
             <span class="text-white font-semibold">Minecraft</span>, 
             <span class="text-white font-semibold">Overwatch</span>, 
             <span class="text-white font-semibold">Roblox</span>,
-            <span class="text-white font-semibold">Chess.com</span>, and
-            <span class="text-white font-semibold">GitHub</span> avatars.
+            <span class="text-white font-semibold">Chess.com</span>, 
+            <span class="text-white font-semibold">GitHub</span>, and
+            <span class="text-white font-semibold">Steam</span> avatars.
         </p>
 
         <!-- THE GENERATOR -->
@@ -143,6 +144,9 @@
                     </button>
                     <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
                         <i class="fas fa-shapes"></i> Roblox
+                    </button>
+                    <button onclick="switchGame('steam')" id="btn-steam" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                        <i class="fab fa-steam"></i> Steam
                     </button>
                     <button onclick="switchGame('chess')" id="btn-chess" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
                         <i class="fas fa-chess-knight"></i> Chess.com
@@ -236,44 +240,68 @@
     </main>
 
     <!-- Integration Section -->
-    <section id="integration" class="w-full max-w-5xl mx-auto px-6 pb-24">
-        <h2 class="text-2xl font-bold mb-8 text-center text-slate-200">Built for Developers</h2>
-        
+    <section id="integration" class="w-full max-w-6xl mx-auto px-6 pb-24">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Built for <span class="text-blue-500">Developers</span></h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">Integrate dynamic avatars into your stack in seconds. No API keys, no rate limits for frontend use.</p>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Card 1 -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <div class="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center text-orange-500 mb-4">
-                    <i class="fab fa-html5 text-xl"></i>
+            <!-- Card 1: HTML -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center text-orange-500">
+                        <i class="fab fa-html5 text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-white">HTML / Portfolio</h3>
                 </div>
-                <h3 class="font-bold text-white mb-2">Portfolio Ready</h3>
-                <p class="text-sm text-slate-400 mb-4">Use a simple `img` tag. The image loads directly from our optimized API.</p>
-                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
-                    &lt;img src=".../api/minecraft/face?user=Notch" /&gt;
-                </code>
+                <p class="text-sm text-slate-400 mb-4 h-10">Standard image tag. Ideal for personal websites and static portfolios.</p>
+                <div class="relative group/code">
+                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
+                        &lt;img src="<span class="text-green-400">/api/minecraft/face?user=Notch</span>" /&gt;
+                    </code>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Card 2 -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500 mb-4">
-                    <i class="fab fa-react text-xl"></i>
+            <!-- Card 2: React -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500">
+                        <i class="fab fa-react text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-white">React & Next.js</h3>
                 </div>
-                <h3 class="font-bold text-white mb-2">React & Next.js</h3>
-                <p class="text-sm text-slate-400 mb-4">Perfect for dynamic user cards or dashboards. Just pass the username.</p>
-                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
-                    &lt;Avatar src={`.../user=${username}`} /&gt;
-                </code>
+                <p class="text-sm text-slate-400 mb-4 h-10">Dynamic component usage. Perfect for user cards or dashboards.</p>
+                <div class="relative group/code">
+                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
+                        &lt;Avatar src={`<span class="text-blue-400">/api/steam/avatar?user=${id}</span>`} /&gt;
+                    </code>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Card 3 -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-slate-700 transition-colors">
-                <div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-500 mb-4">
-                    <i class="fab fa-markdown text-xl"></i>
+            <!-- Card 3: Markdown -->
+            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-500">
+                        <i class="fab fa-markdown text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-white">GitHub Readme</h3>
                 </div>
-                <h3 class="font-bold text-white mb-2">GitHub Readme</h3>
-                <p class="text-sm text-slate-400 mb-4">Show off your current skin in your GitHub profile README.md.</p>
-                <code class="block bg-slate-950 p-3 rounded border border-slate-800 text-xs text-slate-300 font-mono">
-                    ![My Skin](.../api/minecraft/face?user=Me)
-                </code>
+                <p class="text-sm text-slate-400 mb-4 h-10">Show off your current skin or stats in your GitHub profile README.</p>
+                <div class="relative group/code">
+                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
+                        ![My Skin](<span class="text-purple-400">/api/roblox/avatar?user=Me</span>)
+                    </code>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
+                        <i class="far fa-copy"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -282,16 +310,18 @@
     <footer class="border-t border-slate-800/50 bg-slate-950/50 py-12">
         <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="text-slate-500 text-sm">
-                &copy; 2024 AvatarAPI. Not affiliated with Mojang, Blizzard, Roblox, or Microsoft.
+                &copy; 2025-<span id="currentYear"></span> AvatarAPI. Not affiliated with Mojang, Blizzard, Roblox, Valve, or Microsoft.
             </div>
             <div class="flex gap-4">
-                <a href="#" class="text-slate-500 hover:text-white transition-colors"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="text-slate-500 hover:text-white transition-colors"><i class="fab fa-discord"></i></a>
+                <!-- Social links removed as requested -->
             </div>
         </div>
     </footer>
 
     <script>
+        // Set Current Year for Footer
+        document.getElementById('currentYear').innerText = new Date().getFullYear();
+
         let currentGame = 'minecraft';
         let currentUrl = '';
         let currentFormat = 'url';
@@ -334,6 +364,10 @@
                 img.classList.add('smooth');
             } else if (game === 'github') {
                 input.placeholder = "e.g. torvalds";
+                img.classList.remove('pixelated');
+                img.classList.add('smooth');
+            } else if (game === 'steam') {
+                input.placeholder = "e.g. gabelogannewell or ID";
                 img.classList.remove('pixelated');
                 img.classList.add('smooth');
             }
@@ -379,6 +413,7 @@
             else if (currentGame === 'roblox') endpoint = '/api/roblox/avatar';
             else if (currentGame === 'chess') endpoint = '/api/chess/avatar';
             else if (currentGame === 'github') endpoint = '/api/github/avatar';
+            else if (currentGame === 'steam') endpoint = '/api/steam/avatar';
 
             // Construct URL
             const finalUrl = `${baseUrl}${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
@@ -414,6 +449,7 @@
                 if (!hasApi) msg = "API endpoints not found. Deploy to Vercel.";
                 else if (currentGame === 'overwatch') msg = "Player not found. Try 'Name-1234' format.";
                 else if (currentGame === 'roblox') msg = "Roblox user not found.";
+                else if (currentGame === 'steam') msg = "Steam profile not found.";
                 
                 showError(msg);
                 disableActions(true);
@@ -465,6 +501,15 @@
                 btn.innerText = originalText; 
                 btn.classList.remove('text-green-400', 'border-green-500/50');
             }, 2000);
+        }
+
+        // New function for the cards
+        function copyCode(btn) {
+            const code = btn.previousElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+            setTimeout(() => { btn.innerHTML = original; }, 2000);
         }
         
         const style = document.createElement('style');
