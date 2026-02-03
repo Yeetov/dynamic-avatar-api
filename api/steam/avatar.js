@@ -4,7 +4,11 @@ const JimpConstructor = Jimp.default || Jimp;
 
 export default async function handler(request, response) {
     const { user, size: sizeParam } = request.query || {};
-    const size = parseInt(sizeParam) || 256;
+    
+    // Steam's maximum native avatar size is 184x184.
+    // We cap the size at 184 to prevent blurry upscaling.
+    let requestedSize = parseInt(sizeParam) || 184;
+    const size = Math.min(requestedSize, 184);
 
     if (!user) return response.status(400).json({ error: 'Missing username or SteamID' });
 
@@ -53,9 +57,8 @@ export default async function handler(request, response) {
 
         const image = await JimpConstructor.read(Buffer.from(imageBuffer));
         
-        // 4. Use BICUBIC for better quality
-        // Since Steam avatars are max 184px, upscaling to 256px requires 
-        // a sharper algorithm than Bilinear.
+        // 4. Resize
+        // Using Bicubic for best quality downscaling/minor adjustments
         image.resize(size, size, JimpConstructor.RESIZE_BICUBIC);
 
         const finalBuffer = await image.getBufferAsync(JimpConstructor.MIME_PNG);
