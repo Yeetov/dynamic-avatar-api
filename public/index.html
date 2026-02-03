@@ -9,228 +9,321 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>AvatarAPI | Dynamic Game Assets for the Web</title>
-    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, Roblox, Chess.com, GitHub, and Steam avatars on your website.">
+    <title>AvatarAPI | Dynamic Game Assets</title>
+    <meta name="description" content="The easiest way to display dynamic Minecraft, Overwatch, Roblox, Chess.com, GitHub, and Steam avatars.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;800&family=Inter:wght@300;400;500;600;700&display=swap');
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #020617; 
-            color: #f8fafc;
-            overflow-x: hidden;
+        :root {
+            --primary: #3b82f6;
+            --secondary: #a855f7;
+            --bg-deep: #020617;
+            --bg-plate: #0f172a;
         }
 
-        /* Dynamic Background */
-        .bg-grid {
-            background-size: 50px 50px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-deep); 
+            color: #f8fafc;
+            overflow-x: hidden;
+            perspective: 2000px;
         }
+
+        /* --- TECTONIC PLATES ANIMATION (CSS Only - No JS Classes) --- */
+        .tectonic-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -10;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .plate {
+            position: absolute;
+            background: var(--bg-plate);
+            opacity: 0.4;
+            transform-origin: center;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .plate-1 {
+            width: 150vw;
+            height: 80vh;
+            top: -20%;
+            left: -20%;
+            transform: rotate(-5deg);
+            animation: tectonic-1 60s infinite ease-in-out alternate;
+        }
+
+        .plate-2 {
+            width: 150vw;
+            height: 100vh;
+            top: 60%;
+            left: -10%;
+            transform: rotate(10deg);
+            animation: tectonic-2 70s infinite ease-in-out alternate;
+        }
+
+        .plate-3 {
+            width: 50vw;
+            height: 50vh;
+            top: 20%;
+            right: -10%;
+            background: radial-gradient(circle at center, #1e293b 0%, transparent 70%);
+            opacity: 0.2;
+            animation: float-slow 40s infinite linear;
+        }
+
+        @keyframes tectonic-1 {
+            0% { transform: rotate(-5deg) translate(0, 0); }
+            100% { transform: rotate(-4deg) translate(20px, 10px); }
+        }
+
+        @keyframes tectonic-2 {
+            0% { transform: rotate(10deg) translate(0, 0); }
+            100% { transform: rotate(8deg) translate(-20px, -10px); }
+        }
+
+        @keyframes float-slow {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-30px, 20px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* --- LINE TRANSITIONS --- */
+        .line-separator {
+            width: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+            margin: 0 auto;
+            animation: line-expand 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes line-expand {
+            0% { width: 0; opacity: 0; }
+            100% { width: 100%; opacity: 1; }
+        }
+
+        /* --- UI ELEMENTS --- */
+        .glass-clean {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0b101b;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- 3D ROTATING CUBE (Subtle) --- */
+        .cube-scene { width: 40px; height: 40px; perspective: 600px; }
+        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: spin-cube 20s infinite linear; }
+        .cube-face {
+            position: absolute; width: 40px; height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .cube-face:nth-child(1) { transform: rotateY(  0deg) translateZ(20px); }
+        .cube-face:nth-child(2) { transform: rotateY( 90deg) translateZ(20px); }
+        .cube-face:nth-child(3) { transform: rotateY(180deg) translateZ(20px); }
+        .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(20px); }
+        .cube-face:nth-child(5) { transform: rotateX( 90deg) translateZ(20px); }
+        .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(20px); }
+        @keyframes spin-cube { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+
+        /* --- UTILS --- */
+        .animate-entrance { opacity: 0; animation: entrance-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes entrance-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-500 { animation-delay: 0.5s; }
 
         .pixelated { image-rendering: pixelated; }
         .smooth { image-rendering: auto; }
         
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
+        .game-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-bottom: 2px solid transparent; opacity: 0.6; }
+        .game-btn:hover { opacity: 1; background: rgba(255,255,255,0.03); }
+        .game-btn.active { opacity: 1; border-color: #3b82f6; background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.05)); color: white; }
 
-        .gradient-text {
-            background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .game-btn {
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         
-        .game-btn.active { 
-            background-color: rgba(59, 130, 246, 0.15); 
-            color: #60a5fa; 
-            border-bottom: 2px solid #60a5fa;
+        /* Intro Fade Out */
+        #intro-layer {
+            position: fixed; inset: 0; background: #020617; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            animation: fade-out 0.5s ease-in-out 1.2s forwards;
+            pointer-events: none;
         }
-        
-        .game-btn:not(.active):hover {
-            color: #94a3b8;
-            background-color: rgba(255,255,255,0.03);
-        }
-
-        .loader {
-            width: 24px; height: 24px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-bottom-color: #60a5fa;
-            border-radius: 50%;
-            animation: rotation 1s linear infinite;
-        }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        @keyframes fade-out { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative selection:bg-blue-500/30">
+<body class="min-h-screen flex flex-col relative selection:bg-blue-500/30 overflow-x-hidden">
 
-    <!-- Ambient Background -->
-    <div class="fixed inset-0 bg-grid z-0 pointer-events-none"></div>
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -z-10 opacity-50"></div>
-    <div class="fixed bottom-0 right-0 w-[600px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] -z-10 opacity-30"></div>
+    <!-- TECTONIC BACKGROUND -->
+    <div class="tectonic-layer">
+        <div class="plate plate-1"></div>
+        <div class="plate plate-2"></div>
+        <div class="plate plate-3"></div>
+        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 100px 100px;"></div>
+    </div>
 
-    <!-- Navigation -->
-    <nav class="relative z-50 w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <i class="fas fa-cube text-white text-sm"></i>
-            </div>
-            <span class="font-bold text-xl tracking-tight text-white">Avatar<span class="font-light text-slate-400">API</span></span>
+    <!-- INTRO -->
+    <div id="intro-layer">
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-16 h-16 border-t-2 border-l-2 border-blue-500 rounded-full animate-spin"></div>
+            <div class="font-mono text-xs text-blue-400 tracking-[0.3em]">INITIALIZING</div>
         </div>
-        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-400">
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="relative z-50 w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center animate-entrance">
+        <div class="flex items-center gap-4">
+            <div class="cube-scene">
+                <div class="cube">
+                    <div class="cube-face"></div>
+                    <div class="cube-face"></div>
+                    <div class="cube-face"></div>
+                    <div class="cube-face"></div>
+                    <div class="cube-face"></div>
+                    <div class="cube-face"></div>
+                </div>
+            </div>
+            <span class="font-bold text-xl tracking-tight text-white">Avatar<span class="font-light text-slate-500">API</span></span>
+        </div>
+        <div class="flex gap-6 text-xs font-bold tracking-widest text-slate-500 uppercase">
             <a href="#demo" class="hover:text-white transition-colors">Generator</a>
-            <a href="#integration" class="hover:text-white transition-colors">Integration</a>
+            <a href="#integration" class="hover:text-white transition-colors">Docs</a>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <main class="relative z-10 w-full max-w-5xl mx-auto px-4 pt-12 pb-24 flex flex-col items-center text-center">
+    <!-- HERO -->
+    <main class="relative z-10 w-full max-w-6xl mx-auto px-4 pt-16 pb-32 flex flex-col items-center text-center">
         
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
-            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            Live API v2.2
+        <div class="animate-entrance delay-100 mb-8">
+            <span class="inline-block px-3 py-1 bg-blue-900/30 border border-blue-500/30 rounded-full text-[10px] font-bold text-blue-400 tracking-widest uppercase">
+                v3.0 Stable
+            </span>
         </div>
 
-        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-            One Link.<br>
-            <span class="gradient-text">Infinite Updates.</span>
+        <h1 class="animate-entrance delay-200 text-6xl md:text-8xl font-black tracking-tighter mb-6 text-white leading-tight">
+            Universal<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Game Assets</span>
         </h1>
         
-        <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
-            Stop manually uploading profile pictures. Use our dynamic API to display your 
-            <span class="text-white font-semibold">Minecraft</span>, 
-            <span class="text-white font-semibold">Overwatch</span>, 
-            <span class="text-white font-semibold">Roblox</span>,
-            <span class="text-white font-semibold">Chess.com</span>, 
-            <span class="text-white font-semibold">GitHub</span>, and
-            <span class="text-white font-semibold">Steam</span> avatars.
-        </p>
+        <div class="animate-entrance delay-300 w-full max-w-2xl mb-16 relative">
+            <div class="line-separator mb-6 opacity-30"></div>
+            <p class="text-lg text-slate-400 font-light leading-relaxed">
+                The definitive API for dynamic avatars. 
+                Zero config. Infinite updates.
+                Supports <span class="text-white">Minecraft, Overwatch, Roblox, Steam, Chess, & GitHub</span>.
+            </p>
+        </div>
 
-        <!-- THE GENERATOR -->
-        <div id="demo" class="w-full relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-            
-            <div class="glass-panel rounded-xl overflow-hidden relative">
+        <!-- MAIN INTERFACE -->
+        <div id="demo" class="w-full relative animate-entrance delay-500">
+            <div class="glass-clean rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                 
-                <!-- Toolbar -->
-                <div class="flex overflow-x-auto border-b border-white/5 bg-slate-900/40 no-scrollbar">
-                    <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5">
+                <!-- TABS -->
+                <div class="flex overflow-x-auto bg-black/20 backdrop-blur-md border-b border-white/5 no-scrollbar">
+                    <button onclick="switchGame('minecraft')" id="btn-minecraft" class="game-btn active flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
                         <i class="fas fa-cube"></i> Minecraft
                     </button>
-                    <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 min-w-[120px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
-                        <i class="fab fa-battle-net"></i> Overwatch 2
+                    <button onclick="switchGame('overwatch')" id="btn-overwatch" class="game-btn flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
+                        <i class="fab fa-battle-net"></i> Overwatch
                     </button>
-                    <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                    <button onclick="switchGame('roblox')" id="btn-roblox" class="game-btn flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
                         <i class="fas fa-shapes"></i> Roblox
                     </button>
-                    <button onclick="switchGame('steam')" id="btn-steam" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                    <button onclick="switchGame('steam')" id="btn-steam" class="game-btn flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
                         <i class="fab fa-steam"></i> Steam
                     </button>
-                    <button onclick="switchGame('chess')" id="btn-chess" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
-                        <i class="fas fa-chess-knight"></i> Chess.com
+                    <button onclick="switchGame('chess')" id="btn-chess" class="game-btn flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
+                        <i class="fas fa-chess-knight"></i> Chess
                     </button>
-                    <button onclick="switchGame('github')" id="btn-github" class="game-btn flex-1 min-w-[100px] py-4 text-sm font-medium flex justify-center items-center gap-2.5 text-slate-400">
+                    <button onclick="switchGame('github')" id="btn-github" class="game-btn flex-1 min-w-[100px] py-5 text-xs font-bold uppercase tracking-wider flex justify-center gap-2">
                         <i class="fab fa-github"></i> GitHub
                     </button>
                 </div>
 
-                <div class="p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center md:items-start">
+                <div class="p-8 md:p-16 flex flex-col md:flex-row gap-12 items-center md:items-start text-left">
                     
-                    <!-- Left: Preview -->
-                    <div class="flex flex-col items-center gap-4">
-                        <div class="relative w-48 h-48 bg-slate-800 rounded-xl border border-white/10 flex items-center justify-center shadow-inner overflow-hidden group/img">
-                            <!-- Background Grid for transparency check -->
-                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 10px 10px;"></div>
+                    <!-- PREVIEW -->
+                    <div class="flex flex-col items-center gap-6 w-full md:w-auto">
+                        <div class="relative w-64 h-64 bg-slate-900 rounded-xl border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden group">
+                            <!-- Subtle Grid -->
+                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 20px 20px;"></div>
                             
                             <img id="avatarPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
-                                class="w-full h-full object-contain z-10 relative pixelated transition-all duration-300 group-hover/img:scale-105" alt="Preview">
+                                class="w-full h-full object-contain z-10 relative pixelated transition-transform duration-500 group-hover:scale-105" alt="Preview">
                             
-                            <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 hidden z-20">
-                                <div class="loader"></div>
+                            <div id="imgLoader" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 hidden z-20 backdrop-blur-sm">
+                                <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                             </div>
                         </div>
-                        <a id="downloadLinkBtn" href="#" download class="text-xs font-medium text-slate-500 hover:text-white flex items-center gap-2 transition-colors pointer-events-none opacity-50">
+                        <a id="downloadLinkBtn" href="#" download class="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors pointer-events-none opacity-50 flex items-center gap-2">
                             <i class="fas fa-download"></i> Download PNG
                         </a>
                     </div>
 
-                    <!-- Right: Controls -->
-                    <div class="flex-grow w-full space-y-6">
+                    <!-- CONTROLS -->
+                    <div class="flex-grow w-full space-y-8">
                         
-                        <!-- Inputs Row -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div class="md:col-span-3 space-y-2">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Username / ID</label>
-                                <div class="relative">
-                                    <input type="text" id="usernameInput" 
-                                        class="w-full bg-slate-900/50 border border-slate-700 focus:border-blue-500 text-white rounded-lg py-3 px-4 outline-none transition-all placeholder-slate-600 font-medium"
-                                        placeholder="Username" autocomplete="off"
-                                        onkeydown="if(event.key === 'Enter') fetchAvatar()">
-                                </div>
-                            </div>
-                            <div class="space-y-2 relative group">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Size (px)</label>
-                                <input type="number" id="sizeInput" value="256" min="32" max="2048"
-                                    class="w-full bg-slate-900/50 border border-slate-700 focus:border-blue-500 text-white rounded-lg py-3 px-4 outline-none transition-all text-center font-mono"
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-2 space-y-2">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Identity</label>
+                                <input type="text" id="usernameInput" 
+                                    class="w-full bg-slate-950/50 border border-slate-800 focus:border-blue-500/50 text-white rounded-lg py-4 px-5 outline-none transition-all placeholder-slate-700 font-medium font-mono"
+                                    placeholder="Username" autocomplete="off"
                                     onkeydown="if(event.key === 'Enter') fetchAvatar()">
-                                <!-- Size Hint Tooltip -->
-                                <div id="sizeHint" class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 transition-opacity whitespace-nowrap pointer-events-none">
-                                    Max: 2048px
-                                </div>
+                            </div>
+                            <div class="space-y-2 relative">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Resolution</label>
+                                <input type="number" id="sizeInput" value="256" min="32" max="2048"
+                                    class="w-full bg-slate-950/50 border border-slate-800 focus:border-blue-500/50 text-white rounded-lg py-4 px-5 outline-none transition-all text-center font-mono"
+                                    onkeydown="if(event.key === 'Enter') fetchAvatar()">
                             </div>
                         </div>
 
-                        <button onclick="fetchAvatar()" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/30 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-magic"></i> Generate Link
+                        <button onclick="fetchAvatar()" class="w-full bg-white text-black hover:bg-blue-50 font-bold py-4 rounded-lg shadow-lg shadow-white/5 transition-all flex items-center justify-center gap-3 uppercase tracking-wider text-sm active:scale-[0.99]">
+                            <i class="fas fa-bolt text-blue-600"></i> Generate Asset
                         </button>
 
-                        <!-- Output Section -->
-                        <div class="space-y-3 pt-2">
-                            <div class="flex justify-between items-end px-1">
-                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Integration Code</label>
-                                <!-- Format Toggle -->
-                                <div class="flex bg-slate-800 rounded-md p-0.5 border border-slate-700">
-                                    <button onclick="setFormat('url')" class="fmt-btn active px-2 py-0.5 text-[10px] font-bold rounded text-slate-300 hover:text-white">URL</button>
-                                    <button onclick="setFormat('html')" class="fmt-btn px-2 py-0.5 text-[10px] font-bold rounded text-slate-500 hover:text-white">HTML</button>
-                                    <button onclick="setFormat('md')" class="fmt-btn px-2 py-0.5 text-[10px] font-bold rounded text-slate-500 hover:text-white">Markdown</button>
+                        <!-- CODE OUTPUT -->
+                        <div class="pt-6 border-t border-white/5 relative">
+                            <div class="flex justify-between items-end mb-3">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Integration Link</label>
+                                <div class="flex bg-slate-900 rounded p-1 border border-slate-800">
+                                    <button onclick="setFormat('url')" class="fmt-btn active px-3 py-1 text-[10px] font-bold rounded text-slate-400 hover:text-white transition-colors">URL</button>
+                                    <button onclick="setFormat('html')" class="fmt-btn px-3 py-1 text-[10px] font-bold rounded text-slate-400 hover:text-white transition-colors">HTML</button>
+                                    <button onclick="setFormat('md')" class="fmt-btn px-3 py-1 text-[10px] font-bold rounded text-slate-400 hover:text-white transition-colors">MD</button>
                                 </div>
                             </div>
                             
                             <div class="relative group">
                                 <input type="text" id="apiLinkInput" readonly 
-                                    class="w-full bg-slate-950 border border-slate-800 text-blue-400 font-mono text-xs rounded-lg p-4 pr-24 outline-none select-all"
-                                    value="// Ready to generate">
+                                    class="w-full bg-slate-950 border border-slate-800 text-blue-400 font-mono text-xs rounded-lg p-4 pr-24 outline-none select-all transition-colors hover:border-slate-700"
+                                    value="// Ready">
                                 
-                                <div class="absolute right-2 top-2 bottom-2 flex gap-1">
-                                    <button onclick="copyLink()" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors text-xs font-medium">
-                                        Copy
-                                    </button>
-                                </div>
+                                <button onclick="copyLink()" class="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition-colors text-[10px] font-bold uppercase tracking-widest">
+                                    Copy
+                                </button>
                             </div>
 
-                            <!-- Error Message -->
-                            <div id="statusContainer" class="hidden text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-3 rounded-lg flex items-center gap-2">
+                            <div id="statusContainer" class="hidden mt-4 text-red-400 text-xs bg-red-950/30 border border-red-500/20 p-4 rounded-lg flex items-center gap-3">
                                 <i class="fas fa-circle-xmark"></i> <span id="statusText">Error</span>
                             </div>
                         </div>
@@ -242,67 +335,59 @@
 
     </main>
 
-    <!-- Integration Section -->
-    <section id="integration" class="w-full max-w-6xl mx-auto px-6 pb-24">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Built for <span class="text-blue-500">Developers</span></h2>
-            <p class="text-slate-400 max-w-2xl mx-auto">Integrate dynamic avatars into your stack in seconds. No API keys, no rate limits for frontend use.</p>
+    <!-- INTEGRATION DOCS -->
+    <section id="integration" class="relative z-10 w-full max-w-6xl mx-auto px-6 pb-32 animate-entrance delay-500">
+        <div class="flex items-center justify-center gap-4 mb-16 opacity-50">
+            <div class="h-px bg-white/20 w-24"></div>
+            <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-white">Developer Resources</h2>
+            <div class="h-px bg-white/20 w-24"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Card 1: HTML -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center text-orange-500">
-                        <i class="fab fa-html5 text-xl"></i>
-                    </div>
-                    <h3 class="font-bold text-white">HTML / Portfolio</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Card 1 -->
+            <div class="glass-clean p-8 rounded-xl hover:border-blue-500/30 transition-colors group">
+                <div class="flex items-center gap-4 mb-6">
+                    <i class="fab fa-html5 text-2xl text-orange-500"></i>
+                    <h3 class="font-bold text-white text-sm uppercase tracking-wide">HTML</h3>
                 </div>
-                <p class="text-sm text-slate-400 mb-4 h-10">Standard image tag. Ideal for personal websites and static portfolios.</p>
-                <div class="relative group/code">
-                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
-                        &lt;img src="<span class="text-green-400">/api/minecraft/face?user=Notch</span>" /&gt;
+                <div class="relative">
+                    <code id="code-html" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
+                        &lt;img src="<span class="text-green-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>" /&gt;
                     </code>
-                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
-                        <i class="far fa-copy"></i>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                        <i class="far fa-copy text-xs"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Card 2: React -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-500">
-                        <i class="fab fa-react text-xl"></i>
-                    </div>
-                    <h3 class="font-bold text-white">React & Next.js</h3>
+            <!-- Card 2 -->
+            <div class="glass-clean p-8 rounded-xl hover:border-blue-500/30 transition-colors group">
+                <div class="flex items-center gap-4 mb-6">
+                    <i class="fab fa-react text-2xl text-blue-500"></i>
+                    <h3 class="font-bold text-white text-sm uppercase tracking-wide">React</h3>
                 </div>
-                <p class="text-sm text-slate-400 mb-4 h-10">Dynamic component usage. Perfect for user cards or dashboards.</p>
-                <div class="relative group/code">
-                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
-                        &lt;Avatar src={`<span class="text-blue-400">/api/steam/avatar?user=${id}</span>`} /&gt;
+                <div class="relative">
+                    <code id="code-react" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
+                        &lt;Avatar src={`<span class="text-blue-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>`} /&gt;
                     </code>
-                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
-                        <i class="far fa-copy"></i>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                        <i class="far fa-copy text-xs"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Card 3: Markdown -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-xl hover:border-blue-500/30 transition-all group">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-500">
-                        <i class="fab fa-markdown text-xl"></i>
-                    </div>
-                    <h3 class="font-bold text-white">GitHub Readme</h3>
+            <!-- Card 3 -->
+            <div class="glass-clean p-8 rounded-xl hover:border-blue-500/30 transition-colors group">
+                <div class="flex items-center gap-4 mb-6">
+                    <i class="fab fa-markdown text-2xl text-purple-500"></i>
+                    <h3 class="font-bold text-white text-sm uppercase tracking-wide">Markdown</h3>
                 </div>
-                <p class="text-sm text-slate-400 mb-4 h-10">Show off your current skin or stats in your GitHub profile README.</p>
-                <div class="relative group/code">
-                    <code class="block bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono overflow-x-auto">
-                        ![My Skin](<span class="text-purple-400">/api/roblox/avatar?user=Me</span>)
+                <div class="relative">
+                    <code id="code-md" class="code-block block p-4 rounded-lg text-[10px] text-slate-400 overflow-x-auto">
+                        ![User](<span class="text-purple-400">https://dynamicavatarapi.vercel.app/api/minecraft/face?user=Notch</span>)
                     </code>
-                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800/80 hover:bg-slate-700 rounded text-xs text-slate-400 hover:text-white transition-colors opacity-0 group-hover/code:opacity-100">
-                        <i class="far fa-copy"></i>
+                    <button onclick="copyCode(this)" class="absolute top-2 right-2 p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+                        <i class="far fa-copy text-xs"></i>
                     </button>
                 </div>
             </div>
@@ -310,111 +395,95 @@
     </section>
 
     <!-- Footer -->
-    <footer class="border-t border-slate-800/50 bg-slate-950/50 py-12">
-        <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="text-slate-500 text-sm">
-                &copy; 2025-<span id="currentYear"></span> AvatarAPI. Not affiliated with Mojang, Blizzard, Roblox, Valve, or Microsoft.
+    <footer class="border-t border-white/5 bg-black/20 py-12 relative z-10 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-slate-600 text-xs font-mono">
+                &copy; 2025-<span id="currentYear"></span> AvatarAPI.
             </div>
-            <div class="flex gap-4">
+            <div class="text-slate-700 text-[10px] uppercase tracking-widest font-bold">
+                System Operational
             </div>
         </div>
     </footer>
 
     <script>
-        // Set Current Year for Footer
+        // --- CONFIG ---
+        const PRODUCTION_URL = 'https://dynamicavatarapi.vercel.app';
         document.getElementById('currentYear').innerText = new Date().getFullYear();
 
         let currentGame = 'minecraft';
         let currentUrl = '';
         let currentFormat = 'url';
         
-        const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : window.location.origin;
-        const hasApi = window.location.hostname !== 'localhost' && !window.location.protocol.startsWith('file');
+        // Use production URL for snippets even in dev for copy-paste accuracy
+        const displayBaseUrl = PRODUCTION_URL;
 
         function switchGame(game) {
             currentGame = game;
             
-            // UI Toggles
             document.querySelectorAll('.game-btn').forEach(b => {
-                b.classList.remove('active', 'text-blue-400', 'border-blue-500');
-                b.classList.add('text-slate-400');
+                b.classList.remove('active', 'bg-white', 'text-black');
+                b.classList.add('text-slate-500');
             });
             
             const activeBtn = document.getElementById(`btn-${game}`);
-            activeBtn.classList.add('active');
-            activeBtn.classList.remove('text-slate-400');
+            activeBtn.classList.add('active', 'bg-white', 'text-black');
+            activeBtn.classList.remove('text-slate-500');
 
-            // Input Context
             const input = document.getElementById('usernameInput');
             const img = document.getElementById('avatarPreview');
             const sizeInput = document.getElementById('sizeInput');
-            const sizeHint = document.getElementById('sizeHint');
 
-            // Default Values
             let maxSize = 2048;
             let defaultSize = 256;
 
             if (game === 'minecraft') {
                 input.placeholder = "e.g. Notch";
-                img.classList.remove('smooth');
-                img.classList.add('pixelated');
+                img.classList.remove('smooth'); img.classList.add('pixelated');
             } else if (game === 'overwatch') {
                 input.placeholder = "e.g. Name#1234";
-                img.classList.remove('pixelated');
-                img.classList.add('smooth');
-                maxSize = 128;
-                defaultSize = 128;
+                img.classList.remove('pixelated'); img.classList.add('smooth');
+                maxSize = 128; defaultSize = 128;
             } else if (game === 'roblox') {
                 input.placeholder = "e.g. Roblox";
-                img.classList.remove('pixelated');
-                img.classList.add('smooth');
+                img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'chess') {
                 input.placeholder = "e.g. MagnusCarlsen";
-                img.classList.remove('pixelated');
-                img.classList.add('smooth');
+                img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'github') {
                 input.placeholder = "e.g. torvalds";
-                img.classList.remove('pixelated');
-                img.classList.add('smooth');
+                img.classList.remove('pixelated'); img.classList.add('smooth');
             } else if (game === 'steam') {
                 input.placeholder = "e.g. gabelogannewell or ID";
-                img.classList.remove('pixelated');
-                img.classList.add('smooth');
-                maxSize = 184;
-                defaultSize = 184;
+                img.classList.remove('pixelated'); img.classList.add('smooth');
+                maxSize = 184; defaultSize = 184;
             }
             
-            // Update Size Input Constraints
             sizeInput.max = maxSize;
             sizeInput.value = defaultSize;
-            sizeHint.innerText = `Max: ${maxSize}px`;
 
-            // Reset Output
             resetOutput();
         }
-
-        // Show/Hide Size Hint
-        const sizeInput = document.getElementById('sizeInput');
-        const sizeHint = document.getElementById('sizeHint');
-        sizeInput.addEventListener('focus', () => sizeHint.classList.remove('opacity-0'));
-        sizeInput.addEventListener('blur', () => sizeHint.classList.add('opacity-0'));
 
         function setFormat(fmt) {
             currentFormat = fmt;
             document.querySelectorAll('.fmt-btn').forEach(b => {
-                b.classList.remove('active', 'bg-slate-600', 'text-white');
-                b.classList.add('text-slate-500');
+                b.classList.remove('active', 'bg-white', 'text-black');
+                b.classList.add('text-slate-400');
             });
-            event.target.classList.add('active', 'text-white');
+            event.target.classList.add('active', 'bg-white', 'text-black');
+            event.target.classList.remove('text-slate-400');
             updateOutputText();
         }
 
         function resetOutput() {
-            document.getElementById('apiLinkInput').value = '// Ready to generate';
+            document.getElementById('apiLinkInput').value = '// Ready';
             document.getElementById('statusContainer').classList.add('hidden');
             document.getElementById('avatarPreview').src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
             disableActions(true);
             currentUrl = '';
+            // Reset snippets to generic
+            updateIntegrationSnippets(null, null);
         }
 
         async function fetchAvatar() {
@@ -425,7 +494,6 @@
 
             if (!username) return;
 
-            // UI Loading State
             document.getElementById('statusContainer').classList.add('hidden');
             document.getElementById('imgLoader').classList.remove('hidden');
             const img = document.getElementById('avatarPreview');
@@ -439,16 +507,17 @@
             else if (currentGame === 'github') endpoint = '/api/github/avatar';
             else if (currentGame === 'steam') endpoint = '/api/steam/avatar';
 
-            // Construct URL
-            const finalUrl = `${baseUrl}${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
-            currentUrl = finalUrl; // Store clean URL
-
-            // Update Text Output immediately
+            // Internal URL for preview (relative)
+            const previewUrl = `${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
+            // External URL for user to copy (absolute)
+            const publicUrl = `${displayBaseUrl}${endpoint}?user=${encodeURIComponent(username)}&size=${size}`;
+            
+            currentUrl = publicUrl; 
             updateOutputText();
+            updateIntegrationSnippets(publicUrl, username);
 
-            // Preview Image (Cache busted)
             const cacheBuster = `&t=${Date.now()}`;
-            const displayUrl = finalUrl + cacheBuster;
+            const displayUrl = previewUrl + cacheBuster;
             
             const tempImg = new Image();
             tempImg.src = displayUrl;
@@ -459,8 +528,9 @@
                 document.getElementById('imgLoader').classList.add('hidden');
                 
                 const dlBtn = document.getElementById('downloadLinkBtn');
-                dlBtn.href = finalUrl;
+                dlBtn.href = displayUrl;
                 dlBtn.download = `${username}_avatar.png`;
+                dlBtn.classList.remove('opacity-50', 'pointer-events-none');
                 
                 disableActions(false);
             };
@@ -468,10 +538,8 @@
             tempImg.onerror = function() {
                 img.style.opacity = '1';
                 document.getElementById('imgLoader').classList.add('hidden');
-                
                 let msg = "User not found";
-                if (!hasApi) msg = "API endpoints not found. Deploy to Vercel.";
-                else if (currentGame === 'overwatch') msg = "Player not found. Try 'Name-1234' format.";
+                if (currentGame === 'overwatch') msg = "Player not found. Try 'Name-1234' format.";
                 else if (currentGame === 'roblox') msg = "Roblox user not found.";
                 else if (currentGame === 'steam') msg = "Steam profile not found.";
                 
@@ -482,18 +550,29 @@
             };
         }
 
+        function updateIntegrationSnippets(url, username) {
+            const cleanUrl = url || `${displayBaseUrl}/api/minecraft/face?user=Notch`;
+            const safeUser = username || 'Notch';
+
+            document.getElementById('code-html').innerHTML = 
+                `&lt;img src="<span class="text-green-400">${cleanUrl}</span>" /&gt;`;
+
+            document.getElementById('code-react').innerHTML = 
+                `&lt;Avatar src={<span class="text-blue-400">"${cleanUrl}"</span>} /&gt;`;
+
+            document.getElementById('code-md').innerHTML = 
+                `![${safeUser}](<span class="text-purple-400">${cleanUrl}</span>)`;
+        }
+
+        // Init with default
+        updateIntegrationSnippets(null, null);
+
         function updateOutputText() {
             if (!currentUrl) return;
-            
             const input = document.getElementById('apiLinkInput');
-            
-            if (currentFormat === 'url') {
-                input.value = currentUrl;
-            } else if (currentFormat === 'html') {
-                input.value = `<img src="${currentUrl}" alt="Avatar" />`;
-            } else if (currentFormat === 'md') {
-                input.value = `![Avatar](${currentUrl})`;
-            }
+            if (currentFormat === 'url') input.value = currentUrl;
+            else if (currentFormat === 'html') input.value = `<img src="${currentUrl}" alt="Avatar" />`;
+            else if (currentFormat === 'md') input.value = `![Avatar](${currentUrl})`;
         }
 
         function showError(msg) {
@@ -516,33 +595,34 @@
             if (copyText.value.startsWith('//')) return;
             copyText.select();
             document.execCommand("copy");
-            
-            const btn = copyText.nextElementSibling.querySelector('button');
+            const btn = copyText.nextElementSibling;
             const originalText = btn.innerText;
-            btn.innerText = 'Copied!';
-            btn.classList.add('text-green-400', 'border-green-500/50');
+            btn.innerText = 'COPIED';
+            btn.classList.add('bg-white', 'text-black');
+            btn.classList.remove('bg-slate-900', 'text-slate-300');
             setTimeout(() => { 
                 btn.innerText = originalText; 
-                btn.classList.remove('text-green-400', 'border-green-500/50');
+                btn.classList.remove('bg-white', 'text-black');
+                btn.classList.add('bg-slate-900', 'text-slate-300');
             }, 2000);
         }
 
-        // New function for the cards
         function copyCode(btn) {
             const code = btn.previousElementSibling.innerText;
-            navigator.clipboard.writeText(code);
+            const el = document.createElement('textarea');
+            el.value = code;
+            el.setAttribute('readonly', '');
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
             const original = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
             setTimeout(() => { btn.innerHTML = original; }, 2000);
         }
-        
-        const style = document.createElement('style');
-        style.textContent = `
-            .fmt-btn.active { background-color: #334155; color: white; }
-            .no-scrollbar::-webkit-scrollbar { display: none; }
-            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
