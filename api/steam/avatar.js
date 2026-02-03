@@ -14,14 +14,13 @@ export default async function handler(request, response) {
     try {
         let profileUrl;
         
-        // Simple heuristic: If it looks like a SteamID64 (17 digits), use /profiles/, otherwise /id/
+        // Determine URL type (ID64 vs Custom URL)
         if (/^\d{17}$/.test(user)) {
             profileUrl = `https://steamcommunity.com/profiles/${user}`;
         } else {
             profileUrl = `https://steamcommunity.com/id/${user}`;
         }
 
-        // Fetch the public profile page
         const profileRes = await fetch(profileUrl, {
             headers: { 'User-Agent': 'AvatarAPI/1.0' }
         });
@@ -32,22 +31,32 @@ export default async function handler(request, response) {
 
         const html = await profileRes.text();
 
-        // Regex to find the OpenGraph image, which is usually the full-size avatar
-        // <meta property="og:image" content="https://avatars.akamai.steamstatic.com/..." />
+        // 1. Find the OpenGraph image
         const match = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
         
         if (!match || !match[1]) {
             throw new Error('Could not find avatar in profile');
         }
 
-        const avatarUrl = match[1];
+        // 2. FORCE FULL RESOLUTION
+        // Steam metadata sometimes points to _medium.jpg (64px). 
+        // We force it to _full.jpg (184px) to get the best quality before resizing.
+        let avatarUrl = match[1];
+        avatarUrl = avatarUrl.replace(/_medium\.jpg$/i, '_full.jpg');
+        avatarUrl = avatarUrl.replace(/_thumb\.jpg$/i, '_full.jpg');
 
-        // Fetch & Resize
+        // 3. Fetch & Resize
         const imageRes = await fetch(avatarUrl);
+        if (!imageRes.ok) throw new Error('Failed to fetch avatar image');
+
         const imageBuffer = await imageRes.arrayBuffer();
 
         const image = await JimpConstructor.read(Buffer.from(imageBuffer));
-        image.resize(size, size, JimpConstructor.RESIZE_BILINEAR);
+        
+        // 4. Use BICUBIC for better quality
+        // Since Steam avatars are max 184px, upscaling to 256px requires 
+        // a sharper algorithm than Bilinear.
+        image.resize(size, size, JimpConstructor.RESIZE_BICUBIC);
 
         const finalBuffer = await image.getBufferAsync(JimpConstructor.MIME_PNG);
 
