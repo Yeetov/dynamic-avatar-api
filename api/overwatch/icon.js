@@ -1,16 +1,14 @@
 import Jimp from 'jimp';
 
-// Helper to handle Jimp import
 const JimpConstructor = Jimp.default || Jimp;
 
 export default async function handler(request, response) {
     const { user, size: sizeParam } = request.query || {};
-    // Default to 256 to match Minecraft
     const size = parseInt(sizeParam) || 256;
 
     if (!user) return response.status(400).json({ error: 'Missing BattleTag' });
 
-    // 1. CRITICAL: Disable Caching (Freshness)
+    // 1. Disable Caching (Freshness)
     response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     response.setHeader('Pragma', 'no-cache');
     response.setHeader('Expires', '0');
@@ -18,12 +16,19 @@ export default async function handler(request, response) {
     try {
         let avatarUrl = null;
         
-        // Prepare ID: "Name#1234" -> "Name-1234"
-        const formattedId = user.replace(/#/g, '-');
+        // Strategy A: Clean up input "Name#1234" -> "Name-1234"
+        // This is what Overfast usually expects for IDs
+        const idBasedUser = user.replace('#', '-');
 
-        // STRATEGY 1: Direct Lookup
+        // Strategy B: Clean Name Only "Name#1234" -> "Name"
+        // Used for the search fallback
+        const nameOnly = user.includes('#') || user.includes('-') 
+            ? user.split(/#|-/)[0] 
+            : user;
+
+        // 1. Direct Lookup (Exact ID Match)
         try {
-            const directUrl = `https://overfast-api.tekrop.fr/players/${formattedId}/summary`;
+            const directUrl = `https://overfast-api.tekrop.fr/players/${idBasedUser}/summary`;
             const directRes = await fetch(directUrl);
             
             if (directRes.ok) {
@@ -34,32 +39,33 @@ export default async function handler(request, response) {
             console.warn("Direct lookup failed:", e.message);
         }
 
-        // STRATEGY 2: Search Fallback
+        // 2. Search Fallback (If Direct failed)
+        // This handles cases where user entered just "Name" or casing was wrong
         if (!avatarUrl) {
             try {
-                const cleanName = user.split('#')[0].split('-')[0];
-                const searchUrl = `https://overfast-api.tekrop.fr/players?name=${cleanName}`;
-                
+                const searchUrl = `https://overfast-api.tekrop.fr/players?name=${nameOnly}`;
                 const searchRes = await fetch(searchUrl);
+                
                 if (searchRes.ok) {
                     const results = await searchRes.json();
                     if (results.results && results.results.length > 0) {
-                        const discriminator = user.includes('#') ? user.split('#')[1] : 
-                                            (user.includes('-') ? user.split('-')[1] : null);
+                        // If user provided a discriminator (e.g. 1234), try to find that specific one in results
+                        const discriminator = user.match(/(\d{3,})/)?.[0]; // Grab 3+ digits if present
                         
                         let match = null;
                         if (discriminator) {
-                            match = results.results.find(p => p.player_id.endsWith(discriminator));
+                             match = results.results.find(p => p.player_id.includes(discriminator));
                         }
-                        if (!match) match = results.results[0];
                         
-                        if (match) {
-                            const matchUrl = `https://overfast-api.tekrop.fr/players/${match.player_id}/summary`;
-                            const matchRes = await fetch(matchUrl);
-                            if (matchRes.ok) {
-                                const matchData = await matchRes.json();
-                                avatarUrl = matchData.avatar;
-                            }
+                        // Default to first result if no discriminator match or no discriminator provided
+                        if (!match) match = results.results[0];
+
+                        // Get avatar from summary
+                        const summaryUrl = `https://overfast-api.tekrop.fr/players/${match.player_id}/summary`;
+                        const summaryRes = await fetch(summaryUrl);
+                        if (summaryRes.ok) {
+                            const summaryData = await summaryRes.json();
+                            avatarUrl = summaryData.avatar;
                         }
                     }
                 }
@@ -72,22 +78,19 @@ export default async function handler(request, response) {
             return response.status(404).json({ error: 'Player not found (Checked Direct & Search)' });
         }
 
-        // PROCESSING: Fetch and Resize
+        // 3. Process Image
         const imageRes = await fetch(avatarUrl);
         if (!imageRes.ok) throw new Error('Failed to load upstream image');
         
         const imageBuffer = await imageRes.arrayBuffer();
-        
-        // Use Jimp to resize to requested size
         const image = await JimpConstructor.read(Buffer.from(imageBuffer));
         
-        // Use Bilinear for smooth scaling (better for illustrations like OW icons)
         image.resize(size, size, JimpConstructor.RESIZE_BILINEAR);
 
-        const resizedBuffer = await image.getBufferAsync(JimpConstructor.MIME_PNG);
+        const finalBuffer = await image.getBufferAsync(JimpConstructor.MIME_PNG);
 
         response.setHeader('Content-Type', 'image/png');
-        response.send(resizedBuffer);
+        response.send(finalBuffer);
 
     } catch (error) {
         console.error("OW API Error:", error);
